@@ -30,6 +30,7 @@ RUN yum install -y bash curl unzip jq git gnupg && \
     yum clean all && \
     rm -rf /var/cache/yum
 
+COPY helper.sh /helper.sh
 COPY --from=terraform-bundler-build /go/terraform-bundle/plugins /root/.terraform.d/plugins
 COPY --from=terraform-bundler-build /go/terraform-bundle/terraform /usr/bin/terraform
 COPY --from=git-crypt-build /usr/local/bin/git-crypt /usr/local/bin/git-crypt
