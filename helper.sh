@@ -1,13 +1,11 @@
 #!/usr/bin/env bash
 
 function _aws_default_authentication() {
-  [[ "${DEBUG+x}" == "true" ]] && echo "Authenticating with access key and secret"
   AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:?'AWS_ACCESS_KEY_ID variable is required'}
   AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:?'AWS_SECRET_ACCESS_KEY variable is required'}
 }
 
 function _aws_oidc_authentication() {
-  [[ "${DEBUG+x}" == "true" ]] && echo "Authenticating with OIDC role \"${AWS_OIDC_ROLE_ARN}\""
   AWS_WEB_IDENTITY_TOKEN=${AWS_WEB_IDENTITY_TOKEN:?'AWS_WEB_IDENTITY_TOKEN variable is required'}
   AWS_WEB_IDENTITY_TOKEN_FILE="$(mktemp -t web_identity_token.XXXXXXX)"
   chmod 600 "${AWS_WEB_IDENTITY_TOKEN_FILE}"
@@ -18,7 +16,6 @@ function _aws_oidc_authentication() {
 
 function _aws_assume_role() {
   if [[ -n "${AWS_ASSUME_ROLE_ARN+x}" ]]; then
-    [[ "${DEBUG+x}" == "true" ]] && echo "Assuming role \"${AWS_ASSUME_ROLE_ARN}\""
     AWS_ROLE_SESSION_NAME=${AWS_ROLE_SESSION_NAME:?'AWS_ROLE_SESSION_NAME variable is required if AWS_ASSUME_ROLE_ARN is set'}
     TEMP_FILE="$(mktemp -t sts_credentials.XXXXXXX)"
     chmod 600 "${TEMP_FILE}"
@@ -44,7 +41,6 @@ function _aws_assume_role() {
 #    - AWS_ROLE_SESSION_NAME
 function aws_authentication() {
   AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION:?'AWS_DEFAULT_REGION is required'}
-  [[ "${DEBUG+x}" == "true" ]] && echo "AWS default region is \"${AWS_DEFAULT_REGION}\""
   if ! command -v aws &> /dev/null; then echo "aws command missing"; exit 1; fi
   if ! command -v jq &> /dev/null; then echo "jq command missing"; exit 1; fi
   if [[ -n "${AWS_OIDC_ROLE_ARN+x}" ]]; then
@@ -62,7 +58,6 @@ function aws_current_account_id() {
 # Handles unlocking git-crypt if GIT_CRYPT_KEY is set. This function assumes
 # you are in a directory containing a git repository.
 function git_crypt_unlock() {
-  [[ "${DEBUG+x}" == "true" ]] && echo "Running git-crypt unlock"
   if [[ -n "${GIT_CRYPT_KEY+x}" ]]; then
     if ! command -v git-crypt &> /dev/null; then echo "jq command missing"; exit 1; fi
     if ! command -v base64 &> /dev/null; then echo "base64 command missing"; exit 1; fi
