@@ -7,7 +7,7 @@ function _aws_default_authentication() {
 
 function _aws_oidc_authentication() {
   AWS_WEB_IDENTITY_TOKEN=${AWS_WEB_IDENTITY_TOKEN:?'AWS_WEB_IDENTITY_TOKEN variable is required'}
-  AWS_WEB_IDENTITY_TOKEN_FILE="$(mktemp -t web_identity_token)"
+  AWS_WEB_IDENTITY_TOKEN_FILE="$(mktemp -t web_identity_token.XXXXXXX)"
   chmod 600 "${AWS_WEB_IDENTITY_TOKEN_FILE}"
   echo "${AWS_WEB_IDENTITY_TOKEN}" >> "${AWS_WEB_IDENTITY_TOKEN_FILE}"
   export AWS_WEB_IDENTITY_TOKEN_FILE AWS_ROLE_ARN="${AWS_OIDC_ROLE_ARN}"
@@ -17,7 +17,7 @@ function _aws_oidc_authentication() {
 function _aws_assume_role() {
   if [[ -n "${AWS_ASSUME_ROLE_ARN+x}" ]]; then
     AWS_ROLE_SESSION_NAME=${AWS_ROLE_SESSION_NAME:?'AWS_ROLE_SESSION_NAME variable is required if AWS_ASSUME_ROLE_ARN is set'}
-    TEMP_FILE="$(mktemp -t sts_credentials)"
+    TEMP_FILE="$(mktemp -t sts_credentials.XXXXXXX)"
     chmod 600 "${TEMP_FILE}"
     aws sts assume-role --role-arn "${AWS_ASSUME_ROLE_ARN}" --role-session-name "${AWS_ROLE_SESSION_NAME}" >> "${TEMP_FILE}"
     AWS_ACCESS_KEY_ID="$(jq -r .Credentials.AccessKeyId "${TEMP_FILE}")"
