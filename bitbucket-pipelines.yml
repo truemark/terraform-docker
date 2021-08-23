@@ -3,10 +3,11 @@ pipelines:
     master:
       - step:
           name: Build
+          image: alpine:latest
           services:
             - docker
           script:
-            - apt-get -qq update && apt-get install -qq jq
+            - apk add --no-cache bash curl jq
             - export TERRAFORM_VERSION="$(./terraform-version.sh)"
             - export FULL_VERSION="${TERRAFORM_VERSION}-${BITBUCKET_BUILD_NUMBER}"
             - docker build --build-arg TERRAFORM_VERSION=${TERRAFORM_VERSION} -t truemark/terraform-aws:${FULL_VERSION} .
