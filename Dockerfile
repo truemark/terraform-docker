@@ -16,6 +16,14 @@ RUN sed -i "s/TERRAFORM_VERSION/${TERRAFORM_VERSION}/" terraform-bundle.hcl && \
     mkdir -p terraform-bundle && \
     unzip -d terraform-bundle terraform_*.zip
 
+FROM amazon/aws-cli:latest AS git-crypt-build
+
+RUN yum install -y git make gcc-c++ openssl-devel openssl && \
+    git clone https://www.agwa.name/git/git-crypt.git && \
+    cd git-crypt && \
+    make && \
+    make install
+
 FROM amazon/aws-cli:latest
 
 RUN yum install -y bash curl unzip jq git git-crypt && \
@@ -24,3 +32,4 @@ RUN yum install -y bash curl unzip jq git git-crypt && \
 
 COPY --from=terraform-bundler-build /go/terraform-bundle/plugins /root/.terraform.d/plugins
 COPY --from=terraform-bundler-build /go/terraform-bundle/terraform /usr/bin/terraform
+COPY --from=git-crypt-build /usr/local/bin/git-crypt /usr/local/bin/git-crypt
