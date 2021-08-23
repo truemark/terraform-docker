@@ -51,6 +51,10 @@ function aws_authentication() {
   _aws_assume_role
 }
 
+function aws_current_account_id() {
+  aws sts get-caller-identity --query 'Account' --output text
+}
+
 # Handles unlocking git-crypt if GIT_CRYPT_KEY is set. This function assumes
 # you are in a directory containing a git repository.
 function git_crypt_unlock() {
