@@ -26,7 +26,7 @@ RUN yum install -y git make gcc-c++ openssl-devel openssl && \
 
 FROM amazon/aws-cli:latest
 
-RUN yum install -y bash curl unzip jq git git-crypt && \
+RUN yum install -y bash curl unzip jq git gnupg && \
     yum clean all && \
     rm -rf /var/cache/yum
 

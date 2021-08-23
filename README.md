@@ -12,4 +12,4 @@ truemark/terraform-aws
  - Based on the amazon/aws-cli:latest image which is based on Amazon Linux
  - Contains the latest aws command
  - Contains the latest terraform and terraform-bundle commands
- - Also contains bash curl unzip jq git and git-crypt
+ - Also contains bash curl unzip jq git git-crypt and gnupg
