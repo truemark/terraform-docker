@@ -18,4 +18,5 @@ truemark/terraform-aws
 truemark/terraform-aws-pipe
  - Based on the truemark/terraform-aws image
  - Entrypoint is modified to call /pipe.sh
- - Exposed AWS_ACCOUNT_ID environment variable to use in scripts
+ - Exposes AWS_ACCOUNT_ID environment variable to use in scripts
+ - Supports changing directories using LOCAL_PATH
