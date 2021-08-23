@@ -2,6 +2,8 @@
 
 set -euo pipefail
 
+[[ "${DEBUG+x}" ]] && export DEBUG
+
 source /helper.sh
 aws_authentication
 git_crypt_unlock
