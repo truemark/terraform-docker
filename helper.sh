@@ -61,7 +61,7 @@ function git_crypt_unlock() {
   if [[ -n "${GIT_CRYPT_KEY+x}" ]]; then
     if ! command -v git-crypt &> /dev/null; then echo "jq command missing"; exit 1; fi
     if ! command -v base64 &> /dev/null; then echo "base64 command missing"; exit 1; fi
-    GIT_CRYPT_KEY_FILE="$(mktemp -t git_crypt_key)"
+    GIT_CRYPT_KEY_FILE="$(mktemp -t git_crypt_key.XXXXXXX)"
     chmod 600 "${GIT_CRYPT_KEY_FILE}"
     echo -n "${GIT_CRYPT_KEY}" | base64 -d >> "${GIT_CRYPT_KEY_FILE}"
     git-crypt unlock "${GIT_CRYPT_KEY_FILE}"
