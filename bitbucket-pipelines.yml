@@ -19,3 +19,16 @@ pipelines:
             - docker login --username $DOCKER_HUB_USER --password $DOCKER_HUB_PASS
             - docker push truemark/terraform-aws
             - docker push truemark/terraform-aws-pipe
+    develop:
+      - step:
+          name: Build & Push Beta Images
+          services:
+            - docker
+          script:
+            - apk add --no-cache bash curl jq
+            - export TERRAFORM_VERSION="$(./terraform-version.sh)"
+            - docker build --build-arg TERRAFORM_VERSION="${TERRAFORM_VERSION}" -t truemark/terraform-aws:beta .
+            - docker build --build-arg SOURCE_IMAGE=truemark/terraform-aws:beta -t truemark/terraform-aws-pipe:beta -f pipe.Dockerfile .
+            - docker login --username $DOCKER_HUB_USER --password $DOCKER_HUB_PASS
+            - docker push truemark/terraform-aws:beta
+            - docker push truemark/terraform-aws-pipe:beta
