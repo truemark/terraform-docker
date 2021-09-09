@@ -224,7 +224,9 @@ function git_crypt_unlock() {
 
 # Calls git_crypt_unlock if GIT_CRYPT_KEY or GIT_CRYPT_KEY_FILE is set
 function if_git_crypt_unlock() {
-  if [[ -n "${GIT_CRYPT_KEY+x}" ]] || [[ -n "${GIT_CRYPT_KEY_FILE+x}" ]]; then
+  if [[ -n "${GIT_CRYPT_KEY+x}" ]] && [[ "${GIT_CRYPT_KEY}" != "" ]]; then
+    git_crypt_unlock
+  elif [[ -n "${GIT_CRYPT_KEY_FILE+x}" ]] && [[ "${GIT_CRYPT_KEY_FILE}" != "" ]]; then
     git_crypt_unlock
   else
     debug "Skipping git-crypt unlock"
