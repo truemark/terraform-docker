@@ -246,9 +246,9 @@ function tf_expand_backend_config() {
   debug "TF_BACKEND_CONFIG_EXPANDED=${TF_BACKEND_CONFIG_EXPANDED}"
 }
 
-# Expands variables if TF_BACKEND_CONFIG is set and TF_EXPAND_BACKEND_CONFIG is true
+# Expands variables if TF_BACKEND_CONFIG is set and TF_EXPAND_BACKEND_CONFIG is not set or is true
 function if_tf_expand_backend_config() {
-  if [[ -n "${TF_BACKEND_CONFIG+x}" ]] && [[ -n "${TF_EXPAND_BACKEND_CONFIG+x}" ]] && [[ "${TF_EXPAND_BACKEND_CONFIG}" == "true" ]]; then
+  if [[ -n "${TF_BACKEND_CONFIG+x}" ]] && { [[ -z "${TF_EXPAND_BACKEND_CONFIG+x}" ]] || [[ "${TF_EXPAND_BACKEND_CONFIG}" == "true" ]]; }; then
     tf_expand_backend_config
   else
     debug "Skipping terraform backend expansion"
@@ -282,5 +282,63 @@ function if_tf_init() {
     tf_init
   else
     debug "Skipping terraform init"
+  fi
+}
+
+# Creates the S3 and DynamoDB tables if TF_AWS_BOOTSTRAP is set to true.
+# This function should be called after backend expansion.
+function tf_aws_bootstrap() {
+  local bucket table config
+  : "${TF_BACKEND_CONFIG:?'is a required variable'}"
+  : "${AWS_DEFAULT_REGION:?'is a required variable'}"
+  config="${TF_BACKEND_CONFIG}"
+  if [[ -n "${TF_BACKEND_CONFIG_EXPANDED+x}" ]]; then
+    config="${TF_BACKEND_CONFIG_EXPANDED}"
+  fi
+  bucket="$(grep bucket "${config}" | sed -e 's/.*=//' | xargs)"
+  table="$(grep table "${config}" | sed -e 's/.*=//' | xargs)"
+  if ! aws s3api head-bucket --bucket "${bucket}" 2>/dev/null 1>&2; then
+    echo "Bootstrapping S3 bucket [${bucket}]"
+    # Create bucket
+    aws s3 mb "s3://${bucket}"
+    # Setup encryption
+    aws s3api put-bucket-encryption \
+      --no-paginate \
+      --bucket "${bucket}" \
+      --server-side-encryption-configuration '{"Rules": [{"ApplyServerSideEncryptionByDefault": {"SSEAlgorithm": "AES256"}}]}'
+    # Setup versioning on bucket
+    aws s3api put-bucket-versioning \
+      --no-paginate \
+      --bucket "${bucket}" \
+      --versioning-configuration Status=Enabled
+    # Block public access
+    aws s3api put-public-access-block \
+      --no-paginate \
+      --bucket "${bucket}" \
+      --public-access-block-configuration "BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true"
+    sleep 5
+  else
+    debug "S3 bucket ${bucket} already exits"
+  fi
+  if ! aws dynamodb describe-table --table-name "${table}" 2>/dev/null 1>&2; then
+    echo "Bootstrapping DynamoDB table [${table}]"
+    aws dynamodb create-table \
+      --no-paginate \
+      --region "${AWS_DEFAULT_REGION}" \
+      --table-name "${table}" \
+      --attribute-definitions AttributeName=LockID,AttributeType=S \
+      --key-schema AttributeName=LockID,KeyType=HASH \
+      --provisioned-throughput ReadCapacityUnits=1,WriteCapacityUnits=1
+    sleep 5
+  else
+    debug "DynamoDB table ${table} already exists"
+  fi
+}
+
+function if_tf_aws_bootstrap() {
+  if [[ -n "${TF_AWS_BOOTSTRAP+x}" ]] && [[ "${TF_AWS_BOOTSTRAP}" == "true" ]]; then
+    tf_aws_bootstrap
+  else
+    debug "Skipping terraform bootstrap"
   fi
 }

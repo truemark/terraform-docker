@@ -20,7 +20,8 @@
 
 # TF_INIT (true, false)
 # TF_BACKEND_CONFIG (path to config)
-# TF_EXPAND_BACKEND_CONFIG (true, false)
+# TF_EXPAND_BACKEND_CONFIG (default true)
+# TF_AWS_BOOTSTRAP (default false)
 
 # Exit on command failure and unset variables
 set -euo pipefail
@@ -84,6 +85,9 @@ for AWS_ACCOUNT_ID in $AWS_ACCOUNT_IDS; do
 
   # Optionally expand backend config
   if_tf_expand_backend_config
+
+  # Optionally bootstrap terraform
+  if_tf_aws_bootstrap
 
   # Optionally initialize terraform
   if_tf_init
