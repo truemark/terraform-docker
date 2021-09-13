@@ -97,15 +97,16 @@ function aws_assume_role() {
   ! command -v jq &> /dev/null && echo "jq command is missing" && exit 1
 
   # Fill in replacement variables
-  AWS_ASSUME_ROLE_ARN="$(eval "echo -n ${AWS_ASSUME_ROLE_ARN}")"
-  debug "AWS_ASSUME_ROLE_ARN=${AWS_ASSUME_ROLE_ARN}"
+  local assume_role_arn_expanded
+  assume_role_arn_expanded="$(eval "echo -n ${AWS_ASSUME_ROLE_ARN}")"
+  debug "assume_role_arn_expanded=${assume_role_arn_expanded}"
 
   # Save the current state
   aws_push_authentication_history
 
   # Get the STS credentials and set them up for use
   local aws_sts_result
-  aws_sts_result=$(aws sts assume-role --role-arn "${AWS_ASSUME_ROLE_ARN}" --role-session-name "${AWS_ROLE_SESSION_NAME}")
+  aws_sts_result=$(aws sts assume-role --role-arn "${assume_role_arn_expanded}" --role-session-name "${AWS_ROLE_SESSION_NAME}")
   aws_clear_authentication
   AWS_ACCESS_KEY_ID=$(echo "${aws_sts_result}" | jq -r .Credentials.AccessKeyId)
   AWS_SECRET_ACCESS_KEY=$(echo "${aws_sts_result}" | jq -r .Credentials.SecretAccessKey)
@@ -236,14 +237,15 @@ function if_git_crypt_unlock() {
 # Expands variables in TF_BACKEND_CONFIG saving to a temp file
 function tf_expand_backend_config() {
   : "${TF_BACKEND_CONFIG:?'is a required variable'}"
-  TF_BACKEND_CONFIG="$(eval "echo -n ${TF_BACKEND_CONFIG}")"
-  if [[ ! -f "${TF_BACKEND_CONFIG}" ]]; then
-    >&2 echo "File ${TF_BACKEND_CONFIG} does not exist" && exit 1
+  local expanded
+  expanded="$(eval "echo -n ${TF_BACKEND_CONFIG}")"
+  if [[ ! -f "${expanded}" ]]; then
+    >&2 echo "File ${expanded} does not exist" && exit 1
   fi
   debug "Expanding TF_BACKEND_CONFIG"
-  debug "TF_BACKEND_CONFIG=${TF_BACKEND_CONFIG}"
+  debug "expanded=${expanded}"
   TF_BACKEND_CONFIG_EXPANDED="$(mktemp -t tf_backend_config.XXXXXXX)"
-  eval "echo -e \"$(sed 's/"/\\"/g' "${TF_BACKEND_CONFIG}")\"" > "${TF_BACKEND_CONFIG_EXPANDED}"
+  eval "echo -e \"$(sed 's/"/\\"/g' "${expanded}")\"" > "${TF_BACKEND_CONFIG_EXPANDED}"
   export TF_BACKEND_CONFIG_EXPANDED
   debug "TF_BACKEND_CONFIG_EXPANDED=${TF_BACKEND_CONFIG_EXPANDED}"
 }
