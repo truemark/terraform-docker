@@ -158,7 +158,7 @@ function aws_account_id() {
 #   - AWS_EXCLUDE_OU_IDS
 function aws_organization_account_ids() {
   debug "Obtaining accounts from organization"
-  AWS_ACCOUNT_IDS="$(aws organizations list-accounts --no-paginate --query 'Accounts[].[Id]' --output text)"
+  AWS_ACCOUNT_IDS="$(aws organizations list-accounts --query 'Accounts[].[Id]' --output text --max-items 10000)"
 
   # Remove current account from list
   local id
@@ -180,7 +180,7 @@ function aws_organization_account_ids() {
   # Remove any accounts from OUs provided in AWS_EXCLUDE_OU_IDS
   if [[ -n "${AWS_EXCLUDE_OU_IDS+x}" ]]; then
     for oid in ${AWS_EXCLUDE_OU_IDS}; do
-      for id in $(aws organizations list-accounts-for-parent --parent-id "${oid}" --no-paginate --query 'Accounts[].[Id]' --output text); do
+      for id in $(aws organizations list-accounts-for-parent --parent-id "${oid}" --query 'Accounts[].[Id]' --output text --max-items 10000); do
         AWS_ACCOUNT_IDS="$(echo "${AWS_ACCOUNT_IDS}" | grep -v "${id}")"
       done
     done
@@ -307,17 +307,14 @@ function tf_aws_bootstrap() {
     aws s3 mb "s3://${bucket}"
     # Setup encryption
     aws s3api put-bucket-encryption \
-      --no-paginate \
       --bucket "${bucket}" \
       --server-side-encryption-configuration '{"Rules": [{"ApplyServerSideEncryptionByDefault": {"SSEAlgorithm": "AES256"}}]}'
     # Setup versioning on bucket
     aws s3api put-bucket-versioning \
-      --no-paginate \
       --bucket "${bucket}" \
       --versioning-configuration Status=Enabled
     # Block public access
     aws s3api put-public-access-block \
-      --no-paginate \
       --bucket "${bucket}" \
       --public-access-block-configuration "BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true"
     sleep 5
@@ -327,7 +324,6 @@ function tf_aws_bootstrap() {
   if ! aws dynamodb describe-table --table-name "${table}" 2>/dev/null 1>&2; then
     echo "Bootstrapping DynamoDB table [${table}]"
     aws dynamodb create-table \
-      --no-paginate \
       --region "${AWS_DEFAULT_REGION}" \
       --table-name "${table}" \
       --attribute-definitions AttributeName=LockID,AttributeType=S \
