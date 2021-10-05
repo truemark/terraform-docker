@@ -26,9 +26,11 @@ RUN yum install -y git make gcc-c++ openssl-devel openssl && \
 
 FROM amazon/aws-cli:latest
 
-RUN yum install -y bash curl unzip jq git gnupg && \
+RUN yum install -y bash curl unzip git gnupg && \
     yum clean all && \
-    rm -rf /var/cache/yum
+    rm -rf /var/cache/yum && \
+    curl -sSL https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64 -o /usr/local/bin/jq && \
+    chmod +x /usr/local/bin/jq
 
 COPY --from=terraform-bundler-build /go/terraform-bundle/plugins /root/.terraform.d/plugins
 COPY --from=terraform-bundler-build /go/terraform-bundle/terraform /usr/bin/terraform

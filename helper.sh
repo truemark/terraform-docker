@@ -306,6 +306,45 @@ function if_tf_init() {
   fi
 }
 
+# Creates or select workspace defined in TF_WORKSPACE
+function tf_workspace() {
+  debug "Executing tf_workspace()"
+  : "${TF_WORKSPACE:?'is a required variable'}"
+  debug "Switching to terraform workspace ${TF_WORKSPACE}"
+  terraform workspace select "${TF_WORKSPACE}" || terraform workspace new "${TF_WORKSPACE}"
+}
+
+# Optionally creates or selects workspace is TF_WORKSPACE is defined
+function if_tf_workspace() {
+  debug "Executing if_tf_workspace()"
+  if [[ -n "${TF_WORKSPACE+x}" ]] && [[ "${TF_WORKSPACE}" != "" ]]; then
+    tf_workspace
+  else
+    debug "Skipping change terraform workspace"
+  fi
+}
+
+function tf_mapping_check() {
+  debug "Executing tf_mapping_check()"
+  local workspace
+  workspace="default"
+  if [[ -n "${TF_WORKSPACE+x}" ]] && [[ "${TF_WORKSPACE}" != "" ]]; then
+    workspace="${TF_WORKSPACE}"
+  fi
+  if [[ -f "./mapping.json" ]]; then
+    debug "Checking mapping.json file for account ${AWS_ACCOUNT_ID} and workspace ${TF_WORKSPACE}"
+    : "${AWS_ACCOUNT_ID:?'variable is required'}"
+
+    # Validate account is in the mapping file
+    [[ $(jq "keys as \$k | \"${AWS_ACCOUNT_ID}\" | IN(\$k[])" "./mapping.json" 2> /dev/null) == "true" ]] || \
+    (echo "Deployment target ${AWS_ACCOUNT_ID} is not valid according to mapping.json" 1>&2 && exit 1)
+
+    # Validate workspace is allowed in the account
+    [[ $(jq ".\"${AWS_ACCOUNT_ID}\" as \$d | \"${workspace}\" | IN(\$d[])" "./mapping.json" 2> /dev/null) == "true" ]] || \
+    (echo "Workspace ${workspace} is not valid for ${AWS_ACCOUNT_ID} according to mapping.json" 1>&2 && exit 1)
+  fi
+}
+
 # Creates the S3 and DynamoDB tables if TF_AWS_BOOTSTRAP is set to true.
 # This function should be called after backend expansion.
 function tf_aws_bootstrap() {

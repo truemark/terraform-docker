@@ -22,6 +22,7 @@
 # TF_BACKEND_CONFIG (path to config)
 # TF_EXPAND_BACKEND_CONFIG (default true)
 # TF_AWS_BOOTSTRAP (default false)
+# TF_WORKSPACE or TF_WORKSPACES
 
 # Exit on command failure and unset variables
 set -euo pipefail
@@ -92,9 +93,20 @@ for AWS_ACCOUNT_ID in $AWS_ACCOUNT_IDS; do
   # Optionally initialize terraform
   if_tf_init
 
-  # Execute command(s)
-  for CMD in "${!COMMAND@}"; do
-    eval "${!CMD}"
-  done
+  if [[ -n "${TF_WORKSPACES+x}" ]] && [[ "${TF_WORKSPACES}" != "" ]]; then
+    for TF_WORKSPACE in ${TF_WORKSPACES}; do
+      tf_mapping_check
+      # Execute command(s)
+      for CMD in "${!COMMAND@}"; do
+        eval "${!CMD}"
+      done
+    done
+  else
+    # Execute command(s)
+    tf_mapping_check
+    for CMD in "${!COMMAND@}"; do
+      eval "${!CMD}"
+    done
+  fi
 
 done
