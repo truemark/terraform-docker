@@ -14,6 +14,7 @@ function debug() {
 #  AWS_SECRET_ACCESS_KEY
 # This function will export the variables above.
 function aws_default_authentication() {
+  debug "Calling aws_default_authentication()"
   : "${AWS_ACCESS_KEY_ID:?'is a required variable'}"
   : "${AWS_SECRET_ACCESS_KEY:?'is a required variable'}"
   export AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY
@@ -26,6 +27,7 @@ function aws_default_authentication() {
 # If not already set, this function will set AWS_WEB_IDENTITY_TOKEN_FILE and export
 # the AWS_WEB_IDENTITY_TOKEN_FILE and AWS_ROLE_ARN variables.
 function aws_oidc_authentication() {
+  debug "Calling aws_oidc_authentication()"
 
   # BitBucket has standardized on AWS_OIDC_ROLE_ARN in most their pipes
   [[ -n "${AWS_OIDC_ROLE_ARN+x}" ]] && AWS_ROLE_ARN="${AWS_OIDC_ROLE_ARN}"
@@ -46,12 +48,14 @@ function aws_oidc_authentication() {
 
 # Unsets variables used by AWS CLI & SDK for authentication
 function aws_clear_authentication() {
+  debug "Calling aws_clear_authentication()"
   unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN AWS_WEB_IDENTITY_TOKEN_FILE AWS_ROLE_ARN
   debug "Cleared authentication variables"
 }
 
 # Pushes authentication variables into the exported variable AWS_AUTHENTICATION_HISTORY
 function aws_push_authentication_history() {
+  debug "Calling aws_push_authentication_history()"
   [[ -z "${AWS_AUTHENTICATION_HISTORY+x}" ]] && declare -a arr
   [[ -n "${AWS_AUTHENTICATION_HISTORY+x}" ]] && mapfile -t arr <<< "${AWS_AUTHENTICATION_HISTORY}"
   local line=""
@@ -68,6 +72,7 @@ function aws_push_authentication_history() {
 
 # Pops authentication variables from AWS_AUTHENTICATION_HISTORY and unsets the variable if empty
 function aws_pop_authentication_history() {
+  debug "Calling aws_pop_authentication_history()"
   : "${AWS_AUTHENTICATION_HISTORY:?'variable is required'}"
   mapfile -t arr <<< "${AWS_AUTHENTICATION_HISTORY}"
   aws_clear_authentication
@@ -91,6 +96,7 @@ function aws_pop_authentication_history() {
 #  AWS_SESSION_TOKEN
 #  AWS_AUTHENTICATION_HISTORY
 function aws_assume_role() {
+  debug "Calling aws_assume_role()"
   : "${AWS_ROLE_SESSION_NAME:?'variable is required'}"
   : "${AWS_ASSUME_ROLE_ARN:?'variable is required'}"
   ! command -v aws &> /dev/null && echo "aws command is missing" && exit 1
@@ -116,6 +122,7 @@ function aws_assume_role() {
 
 # Calls aws_assume_role if AWS_ASSUME_ROLE_ARN is set
 function if_aws_assume_role() {
+  debug "Calling if_aws_assume_role()"
   if [[ -n "${AWS_ASSUME_ROLE_ARN+x}" ]] && [[ "${AWS_ASSUME_ROLE_ARN}" != "" ]]; then
     aws_assume_role
   else
@@ -132,6 +139,7 @@ function if_aws_assume_role() {
 #    - AWS_WEB_IDENTITY_TOKEN or AWS_WEB_IDENTITY_TOKEN_FILE
 #    - AWS_ROLE_ARN
 function aws_authentication() {
+  debug "Calling aws_authentication()"
   if [[ -n "${AWS_WEB_IDENTITY_TOKEN+x}${AWS_WEB_IDENTITY_TOKEN_FILE+x}${AWS_ROLE_ARN+x}" ]]; then
     debug "Using aws_oidc_authentication"
     aws_oidc_authentication
@@ -143,6 +151,7 @@ function aws_authentication() {
 
 # Exports variable AWS_ACCOUNT_ID containing the current caller's account ID
 function aws_account_id() {
+  debug "Calling aws_account_id()"
   debug "Obtaining current AWS account ID"
   AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query 'Account' --output text)
   export AWS_ACCOUNT_ID
@@ -157,6 +166,7 @@ function aws_account_id() {
 #   - AWS_EXCLUDE_ACCOUNT_IDS
 #   - AWS_EXCLUDE_OU_IDS
 function aws_organization_account_ids() {
+  debug "Calling aws_organization_account_ids()"
   debug "Obtaining accounts from organization"
   AWS_ACCOUNT_IDS="$(aws organizations list-accounts --query 'Accounts[].[Id]' --output text --max-items 10000)"
 
@@ -197,6 +207,7 @@ function aws_pager_off() {
 
 # Removes all .terraform directories and .terraform.local.hcl files from the working directory
 function terraform_cleanup() {
+  debug "Calling terraform_cleanup()"
   debug "Removing .terraform directories and .terraform.local.hcl files"
   find . -type d -name ".terraform" -prune -exec rm -rf {} \;
   find . -type f -name ".terraform.local.hcl" -exec rm -f {} \;
@@ -207,6 +218,7 @@ function terraform_cleanup() {
 #  GIT_CRYPT_KEY - base64 encoded symmetric encryption key
 #  GIT_CRYPT_KEY_FILE - location of the encryption key
 function git_crypt_unlock() {
+  debug "Calling git_crypt_unlock()"
   ! command -v git-crypt &> /dev/null && echo "git-crypt command is missing" && exit 1
   ! command -v base64 &> /dev/null && echo "base64 command is missing" && exit 1
   if [[ -n "${GIT_CRYPT_KEY+x}" ]] && [[ "${GIT_CRYPT_KEY}" != "" ]]; then
@@ -225,6 +237,7 @@ function git_crypt_unlock() {
 
 # Calls git_crypt_unlock if GIT_CRYPT_KEY or GIT_CRYPT_KEY_FILE is set
 function if_git_crypt_unlock() {
+  debug "Calling if_git_crypt_unlock()"
   if [[ -n "${GIT_CRYPT_KEY+x}" ]] && [[ "${GIT_CRYPT_KEY}" != "" ]]; then
     git_crypt_unlock
   elif [[ -n "${GIT_CRYPT_KEY_FILE+x}" ]] && [[ "${GIT_CRYPT_KEY_FILE}" != "" ]]; then
@@ -236,6 +249,7 @@ function if_git_crypt_unlock() {
 
 # Expands variables in TF_BACKEND_CONFIG saving to a temp file
 function tf_expand_backend_config() {
+  debug "Calling tf_expand_backend_config()"
   : "${TF_BACKEND_CONFIG:?'is a required variable'}"
   local expanded
   expanded="$(eval "echo -n ${TF_BACKEND_CONFIG}")"
@@ -252,6 +266,7 @@ function tf_expand_backend_config() {
 
 # Expands variables if TF_BACKEND_CONFIG is set and TF_EXPAND_BACKEND_CONFIG is not set or is true
 function if_tf_expand_backend_config() {
+  debug "Executing if_tf_expand_backend_config()"
   if [[ -n "${TF_BACKEND_CONFIG+x}" ]] && { [[ -z "${TF_EXPAND_BACKEND_CONFIG+x}" ]] || [[ "${TF_EXPAND_BACKEND_CONFIG}" == "true" ]]; }; then
     tf_expand_backend_config
   else
@@ -261,6 +276,7 @@ function if_tf_expand_backend_config() {
 
 # Executes terraform initialization
 function tf_init() {
+  debug "Executing tf_init()"
   debug "Initializing terraform"
   if [[ -n "${TF_BACKEND_CONFIG_EXPANDED+x}" ]]; then
     if [[ ! -f "${TF_BACKEND_CONFIG_EXPANDED}" ]]; then
@@ -282,6 +298,7 @@ function tf_init() {
 
 # Executes terraform initialization if TF_INIT is true
 function if_tf_init() {
+  debug "Executing if_tf_init()"
   if [[ -n "${TF_INIT+x}" ]] && [[ "${TF_INIT}" == "true" ]]; then
     tf_init
   else
@@ -292,6 +309,7 @@ function if_tf_init() {
 # Creates the S3 and DynamoDB tables if TF_AWS_BOOTSTRAP is set to true.
 # This function should be called after backend expansion.
 function tf_aws_bootstrap() {
+  debug "Executing tf_aws_bootstrap()"
   local bucket table config
   : "${TF_BACKEND_CONFIG:?'is a required variable'}"
   : "${AWS_DEFAULT_REGION:?'is a required variable'}"
@@ -336,6 +354,7 @@ function tf_aws_bootstrap() {
 }
 
 function if_tf_aws_bootstrap() {
+  debug "Executing if_tf_aws_bootstrap()"
   if [[ -n "${TF_AWS_BOOTSTRAP+x}" ]] && [[ "${TF_AWS_BOOTSTRAP}" == "true" ]]; then
     tf_aws_bootstrap
   else
