@@ -22,6 +22,7 @@ pipelines:
     develop:
       - step:
           name: Build & Push Beta Images
+          image: alpine:latest
           services:
             - docker
           script:
