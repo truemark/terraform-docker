@@ -63,6 +63,20 @@ if [[ "${AWS_ACCOUNT_IDS}" == "all" ]]; then
   aws_organization_account_ids
 fi
 
+function print_heading() {
+  echo ""
+  echo "-------------------------------------------------------------------------------"
+  echo "Executing..."
+  echo "AWS Account:          ${AWS_ACCOUNT_ID}"
+  echo "Terraform Workspace:  $(terraform workspace show)"
+  echo "Commands:"
+  for CMD in "${!COMMAND@}"; do
+    echo "  ${!CMD}"
+  done
+  echo "-------------------------------------------------------------------------------"
+  echo ""
+}
+
 # For each account, run command
 for AWS_ACCOUNT_ID in $AWS_ACCOUNT_IDS; do
 
@@ -78,12 +92,6 @@ for AWS_ACCOUNT_ID in $AWS_ACCOUNT_IDS; do
   # Set AWS_ACCOUNT_ID and verify match
   aws_account_id
 
-  echo ""
-  echo "-------------------------------------------------------------------------------"
-  echo "Executing command(s) in AWS account ${AWS_ACCOUNT_ID}"
-  echo "-------------------------------------------------------------------------------"
-  echo ""
-
   # Optionally expand backend config
   if_tf_expand_backend_config
 
@@ -96,6 +104,8 @@ for AWS_ACCOUNT_ID in $AWS_ACCOUNT_IDS; do
   if [[ -n "${TF_WORKSPACES+x}" ]] && [[ "${TF_WORKSPACES}" != "" ]]; then
     for TF_WORKSPACE in ${TF_WORKSPACES}; do
       tf_mapping_check
+      if_tf_workspace
+      print_heading
       # Execute command(s)
       for CMD in "${!COMMAND@}"; do
         eval "${!CMD}"
@@ -104,6 +114,8 @@ for AWS_ACCOUNT_ID in $AWS_ACCOUNT_IDS; do
   else
     # Execute command(s)
     tf_mapping_check
+    if_tf_workspace
+    print_heading
     for CMD in "${!COMMAND@}"; do
       eval "${!CMD}"
     done

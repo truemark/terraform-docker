@@ -312,6 +312,7 @@ function tf_workspace() {
   : "${TF_WORKSPACE:?'is a required variable'}"
   debug "Switching to terraform workspace ${TF_WORKSPACE}"
   terraform workspace select "${TF_WORKSPACE}" || terraform workspace new "${TF_WORKSPACE}"
+  echo "Terraform Workspace: ${TF_WORKSPACE}"
 }
 
 # Optionally creates or selects workspace is TF_WORKSPACE is defined
