@@ -66,9 +66,9 @@ fi
 function print_heading() {
   echo ""
   echo "-------------------------------------------------------------------------------"
-  echo "Executing..."
-  echo "AWS Account:          ${AWS_ACCOUNT_ID}"
-  echo "Terraform Workspace:  $(terraform workspace show)"
+  echo "Executing command(s) in AWS account ${AWS_ACCOUNT_ID}"
+  echo "Terraform Workspace: $(terraform workspace show)"
+  echo "Working Directory: $(pwd)"
   echo "Commands:"
   for CMD in "${!COMMAND@}"; do
     echo "  ${!CMD}"
