@@ -102,6 +102,13 @@ for AWS_ACCOUNT_ID in $AWS_ACCOUNT_IDS; do
   if_tf_init
 
   if [[ -n "${TF_WORKSPACES+x}" ]] && [[ "${TF_WORKSPACES}" != "" ]]; then
+    if [[ "${TF_WORKSPACES}" == "all" ]]; then
+      if [[ ! -f mapping.json ]]; then
+        echo "mapping.json file is required when TF_WORKSPACES is set to 'all'" 2>&1 && exit 1
+      fi
+      TF_WORKSPACES="$(jq -r ".\"${AWS_ACCOUNT_ID}\"[]" mapping.json)"
+      debug "TF_WORKSPACES=${TF_WORKSPACES}"
+    fi
     for TF_WORKSPACE in ${TF_WORKSPACES}; do
       tf_mapping_check
       if_tf_workspace
