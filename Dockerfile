@@ -26,7 +26,7 @@ RUN yum install -y git make gcc-c++ openssl-devel openssl && \
 
 FROM amazon/aws-cli:latest
 
-RUN yum install -y bash curl unzip git gnupg && \
+RUN yum install -y bash curl unzip git gnupg python3 && \
     yum clean all && \
     rm -rf /var/cache/yum && \
     curl -sSL https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64 -o /usr/local/bin/jq && \
