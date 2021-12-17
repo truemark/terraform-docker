@@ -1,21 +1,3 @@
-#FROM golang:alpine AS terraform-bundler-build
-#
-#ARG TERRAFORM_VERSION
-#RUN test -n "${TERRAFORM_VERSION}"
-
-#RUN apk --no-cache add git unzip jq curl && \
-#    git clone --single-branch --branch=v${TERRAFORM_VERSION} --depth=1 https://github.com/hashicorp/terraform.git && \
-#    cd terraform && \
-#    go build -o ../terraform-bundle ./tools/terraform-bundle && \
-#    mv /go/terraform-bundle /bin/
-#
-#COPY terraform-plugins.tf .
-
-#RUN sed -i "s/TERRAFORM_VERSION/${TERRAFORM_VERSION}/" terraform-plugins.tf && \
-#    terraform-bundle package terraform-plugins.tf && \
-#    mkdir -p terraform-bundle && \
-#    unzip -d terraform-bundle terraform_*.zip
-
 FROM amazonlinux:2 AS git-crypt-build
 
 RUN yum install -y git make gcc-c++ openssl-devel openssl && \
