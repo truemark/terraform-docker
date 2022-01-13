@@ -333,7 +333,7 @@ function tf_mapping_check() {
     workspace="${TF_WORKSPACE}"
   fi
   if [[ -f "./mapping.json" ]]; then
-    debug "Checking mapping.json file for account ${AWS_ACCOUNT_ID} and workspace ${TF_WORKSPACE}"
+    debug "Checking mapping.json file for account ${AWS_ACCOUNT_ID} and workspace ${workspace}"
     : "${AWS_ACCOUNT_ID:?'variable is required'}"
 
     # Validate account is in the mapping file
