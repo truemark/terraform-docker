@@ -4,7 +4,8 @@ RUN yum install -y git make gcc-c++ openssl-devel openssl && \
     git clone https://www.agwa.name/git/git-crypt.git && \
     cd git-crypt && \
     make && \
-    make install
+    make install \
+    git config --global --add safe.directory /opt/atlassian/pipelines/agent/build
 
 FROM lacework/lacework-cli:latest AS lacework
 
