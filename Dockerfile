@@ -22,7 +22,7 @@ RUN yum install -y bash curl unzip git gnupg python3 && \
     yum clean all && \
     rm -rf /var/cache/yum && \
     curl -sSL https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64 -o /usr/local/bin/jq && \
-    chmod +x /usr/local/bin/jq \
+    chmod +x /usr/local/bin/jq && \
     git config --global --add safe.directory /opt/atlassian/pipelines/agent/build
 
 COPY --from=git-crypt-build /usr/local/bin/git-crypt /usr/local/bin/git-crypt
