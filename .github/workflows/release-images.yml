@@ -1,0 +1,73 @@
+name: release
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+  schedule:
+    # Run at 6PM UTC every Monday
+    - cron: '0 18 * * 1'
+
+permissions:
+  id-token: write
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Get Version
+        run: |
+          export TERRAFORM_VERSION=$(curl -sSLf https://checkpoint-api.hashicorp.com/v1/check/terraform | jq -r .current_version)
+          echo "TERRAFORM_VERSION=${TERRAFORM_VERSION}" >> $GITHUB_ENV
+          echo "Terraform Version: ${TERRAFORM_VERSION}"
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: "${{ secrets.AWS_ASSUME_ROLE }}"
+          aws-region: "us-east-1"
+          role-duration-seconds: 7200
+      - name: Login to ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v1
+        with:
+          registry-type: public
+      - name: Setup Buildx Remote Docker
+        id: buildx
+        uses: truemark/aws-buildx-remote-docker-instance-action@v4
+        with:
+          security-group-id: "${{ vars.SECURITY_GROUP_ID }}"
+          subnet-id: "${{ vars.SUBNET_ID }}"
+          instance-profile: "${{ vars.INSTANCE_PROFILE }}"
+          region: "us-east-2"
+      - name: Build Base Image
+        run: |
+          docker buildx build \
+            --push \
+            --platform linux/arm64,linux/amd64 \
+            --build-arg TERRAFORM_VERSION=${{ env.TERRAFORM_VERSION}} \
+            -f Dockerfile \
+            -t truemark/terraform-aws:${{ env.TERRAFORM_VERSION }}-${{ github.run_number }} \
+            -t truemark/terraform-aws:${{ env.TERRAFORM_VERSION }} \
+            -t truemark/terraform-aws:latest \
+            .
+      - name: Build Pipe Image
+        run: |
+          docker buildx build \
+            --push \
+            --platform linux/arm64,linux/amd64 \
+            --build-arg SOURCE_IMAGE=truemark/terraform-aws:${{ env.TERRAFORM_VERSION}}--${{ github.run_number }} \
+            -f pipe.Dockerfile \
+            -t truemark/terraform-aws-pipe:${{ env.TERRAFORM_VERSION }}-${{ github.run_number }} \
+            -t truemark/terraform-aws-pipe:${{ env.TERRAFORM_VERSION }} \
+            -t truemark/terraform-aws-pipe:latest \
+            .
