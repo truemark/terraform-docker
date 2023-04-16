@@ -11,6 +11,6 @@ COPY --from=truemark/git-crypt:amazonlinux-2023 /usr/local/ /usr/local/
 COPY --from=terraform /root/.terraform.d/plugins /root/.terraform.d/plugins
 COPY --from=terraform /bin/terraform /bin/terraform
 COPY helper.sh /helper.sh
-RUN yum install -y zip unzip tar gnupg python3 && \
+RUN yum install -y zip unzip tar gnupg python3 findutils && \
     yum clean all && rm -rf /var/cache/yum
 ENTRYPOINT ["/usr/bin/terraform"]
