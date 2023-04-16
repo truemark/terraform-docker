@@ -95,7 +95,7 @@ jobs:
           docker buildx build \
             --push \
             --platform linux/arm64,linux/amd64 \
-            --build-arg SOURCE_IMAGE=truemark/terraform-aws:${{ env.TERRAFORM_VERSION}}--${{ github.run_number }} \
+            --build-arg SOURCE_IMAGE="truemark/terraform-aws:${{ env.TERRAFORM_VERSION}}-${{ github.run_number }}" \
             -f pipe.Dockerfile \
             -t truemark/terraform-aws-pipe:${{ env.TERRAFORM_VERSION }}-${{ github.run_number }} \
             -t truemark/terraform-aws-pipe:${{ env.TERRAFORM_VERSION }} \
