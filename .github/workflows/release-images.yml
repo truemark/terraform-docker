@@ -60,6 +60,36 @@ jobs:
             -t truemark/terraform-aws:${{ env.TERRAFORM_VERSION }} \
             -t truemark/terraform-aws:latest \
             .
+      - name: Copy Base ${{ env.TERRAFORM_VERSION }}-${{ github.run_number }} to ECR
+        uses: truemark/skopeo-copy-action@v1
+        with:
+          src-image: "docker://truemark/terraform-aws:${{ env.TERRAFORM_VERSION }}-${{ github.run_number }}"
+          dest-image: "docker://public.ecr.aws/truemark/terraform-aws:${{ env.TERRAFORM_VERSION }}-${{ github.run_number }}"
+          src-username: "${{ secrets.DOCKER_HUB_USERNAME }}"
+          src-password: "${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}"
+          dest-username: "${{ steps.ecr-login.outputs.docker_username_public_ecr_aws }}"
+          dest-password: "${{ steps.ecr-login.outputs.docker_password_public_ecr_aws }}"
+          multi-arch: "all"
+      - name: Copy Base ${{ env.TERRAFORM_VERSION }} to ECR
+        uses: truemark/skopeo-copy-action@v1
+        with:
+          src-image: "docker://truemark/terraform-aws:${{ env.TERRAFORM_VERSION }}"
+          dest-image: "docker://public.ecr.aws/truemark/terraform-aws:${{ env.TERRAFORM_VERSION }}"
+          src-username: "${{ secrets.DOCKER_HUB_USERNAME }}"
+          src-password: "${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}"
+          dest-username: "${{ steps.ecr-login.outputs.docker_username_public_ecr_aws }}"
+          dest-password: "${{ steps.ecr-login.outputs.docker_password_public_ecr_aws }}"
+          multi-arch: "all"
+      - name: Copy Base latest to ECR
+        uses: truemark/skopeo-copy-action@v1
+        with:
+          src-image: "docker://truemark/terraform-aws:latest"
+          dest-image: "docker://public.ecr.aws/truemark/terraform-aws:latest"
+          src-username: "${{ secrets.DOCKER_HUB_USERNAME }}"
+          src-password: "${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}"
+          dest-username: "${{ steps.ecr-login.outputs.docker_username_public_ecr_aws }}"
+          dest-password: "${{ steps.ecr-login.outputs.docker_password_public_ecr_aws }}"
+          multi-arch: "all"
       - name: Build Pipe Image
         run: |
           docker buildx build \
@@ -71,3 +101,33 @@ jobs:
             -t truemark/terraform-aws-pipe:${{ env.TERRAFORM_VERSION }} \
             -t truemark/terraform-aws-pipe:latest \
             .
+      - name: Copy Pipe ${{ env.TERRAFORM_VERSION }}-${{ github.run_number }} to ECR
+        uses: truemark/skopeo-copy-action@v1
+        with:
+          src-image: "docker://truemark/terraform-aws-pipe:${{ env.TERRAFORM_VERSION }}-${{ github.run_number }}"
+          dest-image: "docker://public.ecr.aws/truemark/terraform-aws-pipe:${{ env.TERRAFORM_VERSION }}-${{ github.run_number }}"
+          src-username: "${{ secrets.DOCKER_HUB_USERNAME }}"
+          src-password: "${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}"
+          dest-username: "${{ steps.ecr-login.outputs.docker_username_public_ecr_aws }}"
+          dest-password: "${{ steps.ecr-login.outputs.docker_password_public_ecr_aws }}"
+          multi-arch: "all"
+      - name: Copy Pipe ${{ env.TERRAFORM_VERSION }} to ECR
+        uses: truemark/skopeo-copy-action@v1
+        with:
+          src-image: "docker://truemark/terraform-aws-pipe:${{ env.TERRAFORM_VERSION }}"
+          dest-image: "docker://public.ecr.aws/truemark/terraform-aws-pipe:${{ env.TERRAFORM_VERSION }}"
+          src-username: "${{ secrets.DOCKER_HUB_USERNAME }}"
+          src-password: "${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}"
+          dest-username: "${{ steps.ecr-login.outputs.docker_username_public_ecr_aws }}"
+          dest-password: "${{ steps.ecr-login.outputs.docker_password_public_ecr_aws }}"
+          multi-arch: "all"
+      - name: Copy Pipe latest to ECR
+        uses: truemark/skopeo-copy-action@v1
+        with:
+          src-image: "docker://truemark/terraform-aws-pipe:latest"
+          dest-image: "docker://public.ecr.aws/truemark/terraform-aws-pipe:latest"
+          src-username: "${{ secrets.DOCKER_HUB_USERNAME }}"
+          src-password: "${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}"
+          dest-username: "${{ steps.ecr-login.outputs.docker_username_public_ecr_aws }}"
+          dest-password: "${{ steps.ecr-login.outputs.docker_password_public_ecr_aws }}"
+          multi-arch: "all"
