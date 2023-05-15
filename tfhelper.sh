@@ -156,3 +156,11 @@ function if_tf_aws_bootstrap() {
     debug "Skipping terraform bootstrap"
   fi
 }
+
+function terraform_cleanup() {
+  debug "Calling terraform_cleanup()"
+  debug "Removing .terraform directories and .terraform.local.hcl files"
+  find . -type d -name ".terraform" -prune -exec rm -rf {} \;
+  find . -type f -name ".terraform.local.hcl" -exec rm -f {} \;
+  debug "Removal completed"
+}
