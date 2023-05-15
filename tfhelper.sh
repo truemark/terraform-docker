@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-source /helper.sh
+source /usr/local/bin/helper.sh
 
 # Expands variables in TF_BACKEND_CONFIG saving to a temp file
 function tf_expand_backend_config() {

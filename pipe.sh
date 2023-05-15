@@ -28,7 +28,7 @@
 set -euo pipefail
 
 # Import helper functions
-source /tfhelper.sh
+source /usr/local/bin/tfhelper.sh
 
 # Turn off the AWS pager
 aws_pager_off

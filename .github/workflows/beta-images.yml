@@ -51,7 +51,7 @@ jobs:
           docker buildx build \
             --push \
             --platform linux/arm64,linux/amd64 \
-            --build-arg TERRAFORM_VERSION=${{ env.TERRAFORM_VERSION}} \
+            --build-arg TERRAFORM_VERSION=${{ env.TERRAFORM_VERSION }} \
             -f Dockerfile \
             -t truemark/terraform-aws:beta \
             .
