@@ -1,9 +1,10 @@
-FROM hashicorp/terraform:latest AS terraform
 ARG TERRAFORM_VERSION
-RUN test -n "${TERRAFORM_VERSION}"
-COPY terraform-plugins.tf .
-RUN mkdir -p /root/.terraform.d/plugins && \
-    terraform providers mirror /root/.terraform.d/plugins/
+FROM hashicorp/terraform:${TERRAFORM_VERSION} AS terraform
+ARG AWS_PROVIDER_VERSION
+RUN printf "terraform {\nrequired_providers {\naws = {\nsource = \"hashicorp/aws\"\nversion = \"~> ${AWS_PROVIDER_VERSION}\"\n}\n}\n}" > terraform-plugins.tf && \
+    mkdir -p /root/.terraform.d/plugins && \
+    terraform providers mirror /root/.terraform.d/plugins/ && \
+    rm -f terraform-plugins.tf
 
 FROM truemark/aws-cli:amazonlinux-2023 AS base
 COPY --from=truemark/git:amazonlinux-2023 /usr/local/ /usr/local/

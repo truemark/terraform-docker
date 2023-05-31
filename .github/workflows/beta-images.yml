@@ -19,9 +19,11 @@ jobs:
         uses: actions/checkout@v3
       - name: Get Version
         run: |
-          export TERRAFORM_VERSION=$(curl -sSLf https://checkpoint-api.hashicorp.com/v1/check/terraform | jq -r .current_version)
+          source version.sh
           echo "TERRAFORM_VERSION=${TERRAFORM_VERSION}" >> $GITHUB_ENV
+          echo "TERRAFORM_MINOR_VERSION=${TERRAFORM_MINOR_VERSION}" >> $GITHUB_ENV
           echo "Terraform Version: ${TERRAFORM_VERSION}"
+          echo "Terraform Minor Version: ${TERRAFORM_MINOR_VERSION}"
       - name: Login to Docker Hub
         uses: docker/login-action@v2
         with:
@@ -52,6 +54,7 @@ jobs:
             --push \
             --platform linux/arm64,linux/amd64 \
             --build-arg TERRAFORM_VERSION=${{ env.TERRAFORM_VERSION }} \
+            --build-arg AWS_PROVIDER_VERSION=4.0 \
             -f Dockerfile \
             -t truemark/terraform-aws:beta \
             .
