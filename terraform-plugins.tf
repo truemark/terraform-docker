@@ -3,9 +3,5 @@ terraform {
     aws = {
       source = "hashicorp/aws"
     }
-    lacework = {
-      source = "lacework/lacework"
-      version = "~> 1.0"
-    }
   }
 }
