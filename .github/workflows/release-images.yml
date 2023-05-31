@@ -51,7 +51,74 @@ jobs:
           subnet-id: "${{ vars.SUBNET_ID }}"
           instance-profile: "${{ vars.INSTANCE_PROFILE }}"
           region: "us-east-2"
-      - name: Build Base Image
+
+
+      - name: Build Base Image 5
+        run: |
+          docker buildx build \
+            --push \
+            --platform linux/arm64,linux/amd64 \
+            --build-arg TERRAFORM_VERSION=${{ env.TERRAFORM_VERSION }} \
+            --build-arg AWS_PROVIDER_VERSION=5.0 \ 
+            -f Dockerfile \
+            -t truemark/terraform-aws:${{ env.TERRAFORM_VERSION }}-5-${{ github.run_number }} \
+            -t truemark/terraform-aws:${{ env.TERRAFORM_MINOR_VERSION }}-5 \
+            .
+      - name: Copy Base ${{ env.TERRAFORM_VERSION }}-5-${{ github.run_number }} to ECR
+        uses: truemark/skopeo-copy-action@v1
+        with:
+          src-image: "docker://truemark/terraform-aws:${{ env.TERRAFORM_VERSION }}-5-${{ github.run_number }}"
+          dest-image: "docker://public.ecr.aws/truemark/terraform-aws:${{ env.TERRAFORM_VERSION }}-5-${{ github.run_number }}"
+          src-username: "${{ secrets.DOCKER_HUB_USERNAME }}"
+          src-password: "${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}"
+          dest-username: "${{ steps.ecr-login.outputs.docker_username_public_ecr_aws }}"
+          dest-password: "${{ steps.ecr-login.outputs.docker_password_public_ecr_aws }}"
+          multi-arch: "all"
+      - name: Copy Base ${{ env.TERRAFORM_MINOR_VERSION }}-5 to ECR
+        uses: truemark/skopeo-copy-action@v1
+        with:
+          src-image: "docker://truemark/terraform-aws:${{ env.TERRAFORM_MINOR_VERSION }}-5"
+          dest-image: "docker://public.ecr.aws/truemark/terraform-aws:${{ env.TERRAFORM_MINOR_VERSION }}-5"
+          src-username: "${{ secrets.DOCKER_HUB_USERNAME }}"
+          src-password: "${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}"
+          dest-username: "${{ steps.ecr-login.outputs.docker_username_public_ecr_aws }}"
+          dest-password: "${{ steps.ecr-login.outputs.docker_password_public_ecr_aws }}"
+          multi-arch: "all"
+
+
+      - name: Build Pipe Image 5
+        run: |
+          docker buildx build \
+            --push \
+            --platform linux/arm64,linux/amd64 \
+            --build-arg SOURCE_IMAGE="truemark/terraform-aws:${{ env.TERRAFORM_VERSION}}-5-${{ github.run_number }}" \
+            -f pipe.Dockerfile \
+            -t truemark/terraform-aws-pipe:${{ env.TERRAFORM_VERSION }}-5-${{ github.run_number }} \
+            -t truemark/terraform-aws-pipe:${{ env.TERRAFORM_MINOR_VERSION }}-5 \
+            .
+      - name: Copy Pipe ${{ env.TERRAFORM_VERSION }}-5-${{ github.run_number }} to ECR
+        uses: truemark/skopeo-copy-action@v1
+        with:
+          src-image: "docker://truemark/terraform-aws-pipe:${{ env.TERRAFORM_VERSION }}-5-${{ github.run_number }}"
+          dest-image: "docker://public.ecr.aws/truemark/terraform-aws-pipe:${{ env.TERRAFORM_VERSION }}-5-${{ github.run_number }}"
+          src-username: "${{ secrets.DOCKER_HUB_USERNAME }}"
+          src-password: "${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}"
+          dest-username: "${{ steps.ecr-login.outputs.docker_username_public_ecr_aws }}"
+          dest-password: "${{ steps.ecr-login.outputs.docker_password_public_ecr_aws }}"
+          multi-arch: "all"
+      - name: Copy Pipe ${{ env.TERRAFORM_MINOR_VERSION }}-5 to ECR
+        uses: truemark/skopeo-copy-action@v1
+        with:
+          src-image: "docker://truemark/terraform-aws-pipe:${{ env.TERRAFORM_MINOR_VERSION }}-5"
+          dest-image: "docker://public.ecr.aws/truemark/terraform-aws-pipe:${{ env.TERRAFORM_MINOR_VERSION }}-5"
+          src-username: "${{ secrets.DOCKER_HUB_USERNAME }}"
+          src-password: "${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}"
+          dest-username: "${{ steps.ecr-login.outputs.docker_username_public_ecr_aws }}"
+          dest-password: "${{ steps.ecr-login.outputs.docker_password_public_ecr_aws }}"
+          multi-arch: "all"
+
+
+      - name: Build Base Image 4
         run: |
           docker buildx build \
             --push \
@@ -63,7 +130,7 @@ jobs:
             -t truemark/terraform-aws:${{ env.TERRAFORM_MINOR_VERSION }}-4 \
             -t truemark/terraform-aws:latest \
             .
-      - name: Copy Base ${{ env.TERRAFORM_VERSION }}-${{ github.run_number }} to ECR
+      - name: Copy Base ${{ env.TERRAFORM_VERSION }}-4-${{ github.run_number }} to ECR
         uses: truemark/skopeo-copy-action@v1
         with:
           src-image: "docker://truemark/terraform-aws:${{ env.TERRAFORM_VERSION }}-4-${{ github.run_number }}"
@@ -73,7 +140,7 @@ jobs:
           dest-username: "${{ steps.ecr-login.outputs.docker_username_public_ecr_aws }}"
           dest-password: "${{ steps.ecr-login.outputs.docker_password_public_ecr_aws }}"
           multi-arch: "all"
-      - name: Copy Base ${{ env.TERRAFORM_VERSION }} to ECR
+      - name: Copy Base ${{ env.TERRAFORM_MINOR_VERSION }}-4 to ECR
         uses: truemark/skopeo-copy-action@v1
         with:
           src-image: "docker://truemark/terraform-aws:${{ env.TERRAFORM_MINOR_VERSION }}-4"
@@ -93,7 +160,9 @@ jobs:
           dest-username: "${{ steps.ecr-login.outputs.docker_username_public_ecr_aws }}"
           dest-password: "${{ steps.ecr-login.outputs.docker_password_public_ecr_aws }}"
           multi-arch: "all"
-      - name: Build Pipe Image
+
+
+      - name: Build Pipe Image 4
         run: |
           docker buildx build \
             --push \
@@ -104,7 +173,7 @@ jobs:
             -t truemark/terraform-aws-pipe:${{ env.TERRAFORM_MINOR_VERSION }}-4 \
             -t truemark/terraform-aws-pipe:latest \
             .
-      - name: Copy Pipe ${{ env.TERRAFORM_VERSION }}-${{ github.run_number }} to ECR
+      - name: Copy Pipe ${{ env.TERRAFORM_VERSION }}-4-${{ github.run_number }} to ECR
         uses: truemark/skopeo-copy-action@v1
         with:
           src-image: "docker://truemark/terraform-aws-pipe:${{ env.TERRAFORM_VERSION }}-4-${{ github.run_number }}"
@@ -114,7 +183,7 @@ jobs:
           dest-username: "${{ steps.ecr-login.outputs.docker_username_public_ecr_aws }}"
           dest-password: "${{ steps.ecr-login.outputs.docker_password_public_ecr_aws }}"
           multi-arch: "all"
-      - name: Copy Pipe ${{ env.TERRAFORM_VERSION }} to ECR
+      - name: Copy Pipe ${{ env.TERRAFORM_MINOR_VERSION }}-4 to ECR
         uses: truemark/skopeo-copy-action@v1
         with:
           src-image: "docker://truemark/terraform-aws-pipe:${{ env.TERRAFORM_MINOR_VERSION }}-4"
@@ -134,5 +203,7 @@ jobs:
           dest-username: "${{ steps.ecr-login.outputs.docker_username_public_ecr_aws }}"
           dest-password: "${{ steps.ecr-login.outputs.docker_password_public_ecr_aws }}"
           multi-arch: "all"
+
+
       - name: Keepalive
         uses: gautamkrishnar/keepalive-workflow@v1
