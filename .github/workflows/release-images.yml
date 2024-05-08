@@ -23,7 +23,7 @@ jobs:
         with:
           ssh-key: ${{ secrets.SSH_DEPLOY_KEY }}
       - name: Keepalive
-        uses: gautamkrishnar/keepalive-workflow@v1
+        uses: gautamkrishnar/keepalive-workflow@v2
       - name: Get Version
         run: |
           source ./version.sh
