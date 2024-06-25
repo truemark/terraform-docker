@@ -42,17 +42,25 @@ jobs:
             echo "PREFIX=$PREFIX" >> $GITHUB_OUTPUT
             ROOT_PREFIX="beta"
             echo "ROOT_PREFIX=$ROOT_PREFIX" >> $GITHUB_OUTPUT
+        - id: set-terraform-version
+          run: |
+            source ./version.sh
+            echo "TERRAFORM_VERSION=${TERRAFORM_VERSION}" >> $GITHUB_ENV
+            echo "TERRAFORM_MINOR_VERSION=${TERRAFORM_MINOR_VERSION}" >> $GITHUB_ENV
+            echo "Terraform Version: ${TERRAFORM_VERSION}"
+            echo "Terraform Minor Version: ${TERRAFORM_MINOR_VERSION}"
   build:
     needs: [prepare]
-    uses: truemark/github-workflows/.github/workflows/docker-buildx.yml@main
+    uses: truemark/github-workflows/.github/workflows/docker-buildx.yml@develop
     with:
       dockerfile: "Dockerfile"
-      images: "truemark/terraform-aws:${{ needs.prepare.outputs.PREFIX }}${{ github.run_number }},terraform-aws:${{ needs.prepare.outputs.ROOT_PREFIX }}"
+      images: "truemark/terraform-aws:${{ needs.prepare.outputs.PREFIX }}${{ env.TERRAFORM_MINOR_VERSION }},terraform-aws:${{ needs.prepare.outputs.ROOT_PREFIX }}"
       copy_to_ecr_prefix: "public.ecr.aws/truemark"
       target: base
       security_group_id: ${{ vars.SECURITY_GROUP_ID }}
       subnet_id: ${{ vars.SUBNET_ID }}
       instance_profile: ${{ vars.INSTANCE_PROFILE }}
+      docker_build_args: '[TERRAFORM_VERSION=${{ env.TERRAFORM_VERSION }}]'
       region: ${{ vars.AWS_REGION }}
     secrets:
       aws_assume_role: ${{ secrets.AWS_ASSUME_ROLE }}
