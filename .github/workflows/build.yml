@@ -80,7 +80,7 @@ jobs:
       security_group_id: ${{ vars.SECURITY_GROUP_ID }}
       subnet_id: ${{ vars.SUBNET_ID }}
       instance_profile: ${{ vars.INSTANCE_PROFILE }}
-      docker_build_args: '["SOURCE_IMAGE=terraform-aws:${{ needs.prepare.outputs.ROOT_PREFIX }}"]'
+      docker_build_args: '["SOURCE_IMAGE=truemark/terraform-aws:${{ needs.prepare.outputs.ROOT_PREFIX }}"]'
       region: ${{ vars.AWS_REGION }}
     secrets:
       aws_assume_role: ${{ secrets.AWS_ASSUME_ROLE }}
