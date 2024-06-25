@@ -55,15 +55,12 @@ jobs:
           subnet-id: "${{ vars.SUBNET_ID }}"
           instance-profile: "${{ vars.INSTANCE_PROFILE }}"
           region: "us-east-2"
-
-
-      - name: Build Base Image 5
+      - name: Build Base Image
         run: |
           docker buildx build \
             --push \
             --platform linux/arm64,linux/amd64 \
             --build-arg TERRAFORM_VERSION=${{ env.TERRAFORM_VERSION }} \
-            --build-arg AWS_PROVIDER_VERSION=5 \
             -f Dockerfile \
             -t truemark/terraform-aws:${{ env.TERRAFORM_VERSION }}-5-${{ github.run_number }} \
             -t truemark/terraform-aws:${{ env.TERRAFORM_MINOR_VERSION }}-5 \
@@ -128,7 +125,6 @@ jobs:
             --push \
             --platform linux/arm64,linux/amd64 \
             --build-arg TERRAFORM_VERSION=${{ env.TERRAFORM_VERSION }} \
-            --build-arg AWS_PROVIDER_VERSION=4 \
             -f Dockerfile \
             -t truemark/terraform-aws:${{ env.TERRAFORM_VERSION }}-4-${{ github.run_number }} \
             -t truemark/terraform-aws:${{ env.TERRAFORM_MINOR_VERSION }}-4 \
