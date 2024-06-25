@@ -63,7 +63,7 @@ jobs:
       security_group_id: ${{ vars.SECURITY_GROUP_ID }}
       subnet_id: ${{ vars.SUBNET_ID }}
       instance_profile: ${{ vars.INSTANCE_PROFILE }}
-      docker_build_args: '[TERRAFORM_VERSION=${{ needs.prepare.outputs.TERRAFORM_VERSION }}]'
+      docker_build_args: '["TERRAFORM_VERSION=${{ needs.prepare.outputs.TERRAFORM_VERSION }}"]'
       region: ${{ vars.AWS_REGION }}
     secrets:
       aws_assume_role: ${{ secrets.AWS_ASSUME_ROLE }}
