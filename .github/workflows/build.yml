@@ -69,3 +69,20 @@ jobs:
       aws_assume_role: ${{ secrets.AWS_ASSUME_ROLE }}
       docker_hub_username: ${{ secrets.DOCKER_HUB_USERNAME }}
       docker_hub_password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+  build-pipe:
+    needs: [ prepare ]
+    uses: truemark/github-workflows/.github/workflows/docker-buildx.yml@develop
+    with:
+      dockerfile: "pipe.Dockerfile"
+      images: "truemark/terraform-aws-pipe:${{ needs.prepare.outputs.PREFIX }}${{ needs.prepare.outputs.TERRAFORM_MINOR_VERSION }},terraform-aws:${{ needs.prepare.outputs.ROOT_PREFIX }}"
+      copy_to_ecr_prefix: "public.ecr.aws/truemark"
+      target: base
+      security_group_id: ${{ vars.SECURITY_GROUP_ID }}
+      subnet_id: ${{ vars.SUBNET_ID }}
+      instance_profile: ${{ vars.INSTANCE_PROFILE }}
+      docker_build_args: '["SOURCE_IMAGE=terraform-aws:${{ needs.prepare.outputs.ROOT_PREFIX }}"]'
+      region: ${{ vars.AWS_REGION }}
+    secrets:
+      aws_assume_role: ${{ secrets.AWS_ASSUME_ROLE }}
+      docker_hub_username: ${{ secrets.DOCKER_HUB_USERNAME }}
+      docker_hub_password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
