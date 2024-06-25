@@ -46,7 +46,8 @@ jobs:
             echo "ROOT_PREFIX=$ROOT_PREFIX" >> $GITHUB_OUTPUT
         - id: set-terraform-version
           run: |
-            source ./version.sh
+            export TERRAFORM_VERSION=$(curl -sSLf https://checkpoint-api.hashicorp.com/v1/check/terraform | jq -r .current_version)
+            export TERRAFORM_MINOR_VERSION=$(echo "${TERRAFORM_VERSION}" | cut -d '.' -f 1,2)
             echo "TERRAFORM_VERSION=${TERRAFORM_VERSION}" >> $GITHUB_ENV
             echo "TERRAFORM_MINOR_VERSION=${TERRAFORM_MINOR_VERSION}" >> $GITHUB_ENV
             echo "Terraform Version: ${TERRAFORM_VERSION}"
