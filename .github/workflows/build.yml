@@ -70,7 +70,7 @@ jobs:
       docker_hub_username: ${{ secrets.DOCKER_HUB_USERNAME }}
       docker_hub_password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
   build-pipe:
-    needs: [ build ]
+    needs: [ build, prepare ]
     uses: truemark/github-workflows/.github/workflows/docker-buildx.yml@develop
     with:
       dockerfile: "pipe.Dockerfile"
