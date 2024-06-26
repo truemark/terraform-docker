@@ -54,7 +54,7 @@ jobs:
             echo "Terraform Minor Version: ${TERRAFORM_MINOR_VERSION}"
   build:
     needs: [prepare]
-    uses: truemark/github-workflows/.github/workflows/docker-buildx.yml@develop
+    uses: truemark/github-workflows/.github/workflows/docker-buildx.yml@main
     with:
       dockerfile: "Dockerfile"
       images: "truemark/terraform-aws:${{ needs.prepare.outputs.PREFIX }}${{ needs.prepare.outputs.TERRAFORM_MINOR_VERSION }},truemark/terraform-aws:${{ needs.prepare.outputs.ROOT_PREFIX }}"
@@ -71,7 +71,7 @@ jobs:
       docker_hub_password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
   build-pipe:
     needs: [ build, prepare ]
-    uses: truemark/github-workflows/.github/workflows/docker-buildx.yml@develop
+    uses: truemark/github-workflows/.github/workflows/docker-buildx.yml@main
     with:
       dockerfile: "pipe.Dockerfile"
       images: "truemark/terraform-aws-pipe:${{ needs.prepare.outputs.PREFIX }}${{ needs.prepare.outputs.TERRAFORM_MINOR_VERSION }},truemark/terraform-aws-pipe:${{ needs.prepare.outputs.ROOT_PREFIX }}"
