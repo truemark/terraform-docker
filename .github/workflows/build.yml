@@ -58,7 +58,7 @@ jobs:
     with:
       dockerfile: "Dockerfile"
       images: "truemark/terraform-aws:${{ needs.prepare.outputs.PREFIX }}${{ needs.prepare.outputs.TERRAFORM_MINOR_VERSION }},truemark/terraform-aws:${{ needs.prepare.outputs.ROOT_PREFIX }}"
-      #copy_to_ecr_prefix: "public.ecr.aws/truemark"
+      copy_to_ecr_prefix: "public.ecr.aws/truemark"
       target: base
       security_group_id: ${{ vars.SECURITY_GROUP_ID }}
       subnet_id: ${{ vars.SUBNET_ID }}
@@ -75,7 +75,7 @@ jobs:
     with:
       dockerfile: "pipe.Dockerfile"
       images: "truemark/terraform-aws-pipe:${{ needs.prepare.outputs.PREFIX }}${{ needs.prepare.outputs.TERRAFORM_MINOR_VERSION }},truemark/terraform-aws-pipe:${{ needs.prepare.outputs.ROOT_PREFIX }}"
-      #copy_to_ecr_prefix: "public.ecr.aws/truemark"
+      copy_to_ecr_prefix: "public.ecr.aws/truemark"
       target: base
       security_group_id: ${{ vars.SECURITY_GROUP_ID }}
       subnet_id: ${{ vars.SUBNET_ID }}
