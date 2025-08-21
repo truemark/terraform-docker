@@ -112,10 +112,12 @@ function tf_aws_bootstrap() {
   if [[ -n "${TF_BACKEND_CONFIG_EXPANDED+x}" ]]; then
     config="${TF_BACKEND_CONFIG_EXPANDED}"
   fi
+  debug "Backend config file: ${TF_BACKEND_CONFIG}"
+  debug "Backend config: ${TF_BACKEND_CONFIG_EXPANDED}"
   bucket="$(grep bucket "${config}" | sed -e 's/.*=//' | xargs)"
-  echo "Using S3 bucket [${bucket}]"
+  echo "Using S3 bucket: ${bucket}"
   table="$(grep table "${config}" | sed -e 's/.*=//' | xargs)"
-  echo "Using DynamoDB table [${table}]"
+  echo "Using DynamoDB table: ${table}"
   if ! aws s3api head-bucket --bucket "${bucket}" 2>/dev/null 1>&2; then
     echo "Bootstrapping S3 bucket [${bucket}]"
     # Create bucket
