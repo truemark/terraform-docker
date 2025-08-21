@@ -113,7 +113,9 @@ function tf_aws_bootstrap() {
     config="${TF_BACKEND_CONFIG_EXPANDED}"
   fi
   bucket="$(grep bucket "${config}" | sed -e 's/.*=//' | xargs)"
+  echo "Using S3 bucket [${bucket}]"
   table="$(grep table "${config}" | sed -e 's/.*=//' | xargs)"
+  echo "Using DynamoDB table [${table}]"
   if ! aws s3api head-bucket --bucket "${bucket}" 2>/dev/null 1>&2; then
     echo "Bootstrapping S3 bucket [${bucket}]"
     # Create bucket
