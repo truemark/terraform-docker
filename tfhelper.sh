@@ -121,8 +121,7 @@ function tf_aws_bootstrap() {
   if ! aws s3api head-bucket --bucket "${bucket}" 2>/dev/null 1>&2; then
     echo "Bootstrapping S3 bucket: ${bucket}"
     # Create bucket
-    aws --version
-    debug "Running aws s3 mb s3://${bucket}"
+    debug "Running aws s3 mb"
     aws s3 mb "s3://${bucket}"
     # Setup encryption
     debug "Running aws s3api put-bucket-encryption"
