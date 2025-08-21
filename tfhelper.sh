@@ -113,24 +113,28 @@ function tf_aws_bootstrap() {
     config="${TF_BACKEND_CONFIG_EXPANDED}"
   fi
   debug "Backend config file: ${TF_BACKEND_CONFIG}"
-  debug "Backend config: ${TF_BACKEND_CONFIG_EXPANDED}"
+  debug "Backend config file expanded: ${TF_BACKEND_CONFIG_EXPANDED}"
   bucket="$(grep bucket "${config}" | sed -e 's/.*=//' | xargs)"
   echo "Using S3 bucket: ${bucket}"
   table="$(grep table "${config}" | sed -e 's/.*=//' | xargs)"
   echo "Using DynamoDB table: ${table}"
   if ! aws s3api head-bucket --bucket "${bucket}" 2>/dev/null 1>&2; then
-    echo "Bootstrapping S3 bucket [${bucket}]"
+    echo "Bootstrapping S3 bucket: ${bucket}"
     # Create bucket
+    debug "Running aws s3 mb"
     aws s3 mb "s3://${bucket}"
     # Setup encryption
+    debug "Running aws s3api put-bucket-encryption"
     aws s3api put-bucket-encryption \
       --bucket "${bucket}" \
       --server-side-encryption-configuration '{"Rules": [{"ApplyServerSideEncryptionByDefault": {"SSEAlgorithm": "AES256"}}]}'
     # Setup versioning on bucket
+    debug "Running aws s3api put-bucket-versioning"
     aws s3api put-bucket-versioning \
       --bucket "${bucket}" \
       --versioning-configuration Status=Enabled
     # Block public access
+    debug "Running aws s3api put-public-access-block"
     aws s3api put-public-access-block \
       --bucket "${bucket}" \
       --public-access-block-configuration "BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true"
