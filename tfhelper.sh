@@ -165,6 +165,101 @@ function if_tf_aws_bootstrap() {
   fi
 }
 
+# Recursively gets all account IDs under a given OU ID (including nested OUs)
+function aws_ou_account_ids() {
+  debug "Executing aws_ou_account_ids()"
+  : "${AWS_OU_ID:?'is a required variable'}"
+  
+  local ou_id="${AWS_OU_ID}"
+  local all_accounts=""
+  
+  debug "Getting accounts for OU: ${ou_id}"
+  
+  # Get direct accounts under this OU
+  local direct_accounts
+  direct_accounts=$(aws organizations list-accounts-for-parent --parent-id "${ou_id}" --query 'Accounts[?Status==`ACTIVE`].Id' --output text 2>/dev/null || echo "")
+  
+  if [[ -n "${direct_accounts}" ]]; then
+    debug "Found direct accounts: ${direct_accounts}"
+    all_accounts="${direct_accounts}"
+  fi
+  
+  # Get child OUs and recursively get their accounts
+  local child_ous
+  child_ous=$(aws organizations list-organizational-units-for-parent --parent-id "${ou_id}" --query 'OrganizationalUnits[].Id' --output text 2>/dev/null || echo "")
+  
+  if [[ -n "${child_ous}" ]]; then
+    debug "Found child OUs: ${child_ous}"
+    for child_ou in ${child_ous}; do
+      debug "Recursively getting accounts for child OU: ${child_ou}"
+      local child_accounts
+      child_accounts=$(AWS_OU_ID="${child_ou}" aws_ou_account_ids_recursive "${child_ou}")
+      if [[ -n "${child_accounts}" ]]; then
+        if [[ -n "${all_accounts}" ]]; then
+          all_accounts="${all_accounts} ${child_accounts}"
+        else
+          all_accounts="${child_accounts}"
+        fi
+      fi
+    done
+  fi
+  
+  # Remove duplicates and export
+  if [[ -n "${all_accounts}" ]]; then
+    all_accounts=$(echo "${all_accounts}" | tr ' ' '\n' | sort -u | tr '\n' ' ' | sed 's/[[:space:]]*$//')
+    debug "All accounts under OU ${ou_id}: ${all_accounts}"
+    echo "${all_accounts}"
+  else
+    debug "No accounts found under OU ${ou_id}"
+    echo ""
+  fi
+}
+
+# Helper function for recursive OU account discovery
+function aws_ou_account_ids_recursive() {
+  local ou_id="$1"
+  local all_accounts=""
+  
+  # Get direct accounts under this OU
+  local direct_accounts
+  direct_accounts=$(aws organizations list-accounts-for-parent --parent-id "${ou_id}" --query 'Accounts[?Status==`ACTIVE`].Id' --output text 2>/dev/null || echo "")
+  
+  if [[ -n "${direct_accounts}" ]]; then
+    all_accounts="${direct_accounts}"
+  fi
+  
+  # Get child OUs and recursively get their accounts
+  local child_ous
+  child_ous=$(aws organizations list-organizational-units-for-parent --parent-id "${ou_id}" --query 'OrganizationalUnits[].Id' --output text 2>/dev/null || echo "")
+  
+  if [[ -n "${child_ous}" ]]; then
+    for child_ou in ${child_ous}; do
+      local child_accounts
+      child_accounts=$(aws_ou_account_ids_recursive "${child_ou}")
+      if [[ -n "${child_accounts}" ]]; then
+        if [[ -n "${all_accounts}" ]]; then
+          all_accounts="${all_accounts} ${child_accounts}"
+        else
+          all_accounts="${child_accounts}"
+        fi
+      fi
+    done
+  fi
+  
+  echo "${all_accounts}"
+}
+
+# Gets OU name for logging purposes
+function aws_ou_name() {
+  debug "Executing aws_ou_name()"
+  : "${AWS_OU_ID:?'is a required variable'}"
+  
+  local ou_name
+  ou_name=$(aws organizations describe-organizational-unit --organizational-unit-id "${AWS_OU_ID}" --query 'OrganizationalUnit.Name' --output text 2>/dev/null || echo "Unknown")
+  debug "OU Name for ${AWS_OU_ID}: ${ou_name}"
+  echo "${ou_name}"
+}
+
 function terraform_cleanup() {
   debug "Calling terraform_cleanup()"
   debug "Removing .terraform directories and .terraform.local.hcl files"
