@@ -84,8 +84,8 @@ if [[ -n "${AWS_OU_ID+x}" ]]; then
     exit 1
   fi
   
-  # Clean up account IDs (remove any extra whitespace/tabs and ensure proper format)
-  AWS_ACCOUNT_IDS=$(echo "${AWS_ACCOUNT_IDS}" | tr '\t' ' ' | tr -s ' ' | xargs)
+  # Clean up account IDs (remove any extra whitespace/tabs, deduplicate, and ensure proper format)
+  AWS_ACCOUNT_IDS=$(echo "${AWS_ACCOUNT_IDS}" | tr '\t' ' ' | tr -s ' ' | tr ' ' '\n' | sort -u | tr '\n' ' ' | xargs)
   echo "Found accounts under OU ${AWS_OU_ID} (${OU_NAME}): ${AWS_ACCOUNT_IDS}"
   
   # Apply exclusions if AWS_EXCLUDE_ACCOUNT_IDS is set
