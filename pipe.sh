@@ -89,11 +89,11 @@ if [[ -n "${AWS_OU_ID+x}" ]]; then
   # Apply exclusions if AWS_EXCLUDE_ACCOUNT_IDS is set
   if [[ -n "${AWS_EXCLUDE_ACCOUNT_IDS+x}" ]] && [[ "${AWS_EXCLUDE_ACCOUNT_IDS}" != "" ]]; then
     echo "Applying account exclusions: ${AWS_EXCLUDE_ACCOUNT_IDS}"
-    local excluded_accounts="${AWS_EXCLUDE_ACCOUNT_IDS}"
-    local filtered_accounts=""
+    excluded_accounts="${AWS_EXCLUDE_ACCOUNT_IDS}"
+    filtered_accounts=""
     
     for account_id in ${AWS_ACCOUNT_IDS}; do
-      local exclude_account=false
+      exclude_account=false
       for excluded_id in ${excluded_accounts}; do
         if [[ "${account_id}" == "${excluded_id}" ]]; then
           exclude_account=true
