@@ -36,6 +36,20 @@ aws_pager_off
 # Handle AWS authentication
 aws_authentication
 
+# Set default management account configuration for OU operations
+if [[ -n "${AWS_OU_ID+x}" ]]; then
+  # Set default management role name if not provided
+  export AWS_MANAGEMENT_ROLE_NAME="${AWS_MANAGEMENT_ROLE_NAME:-github-security-provisioner}"
+  
+  echo "OU-based deployment detected with management account configuration:"
+  if [[ -n "${AWS_MANAGEMENT_ACCOUNT_ID+x}" ]]; then
+    echo "  Management Account ID: ${AWS_MANAGEMENT_ACCOUNT_ID}"
+  else
+    echo "  Management Account ID: Not configured (will use current credentials for OU operations)"
+  fi
+  echo "  Management Role Name: ${AWS_MANAGEMENT_ROLE_NAME}"
+fi
+
 # Unlock with git-crypt if needed
 if_git_crypt_unlock
 
@@ -49,7 +63,51 @@ fi
 # Validate command is set
 COMMAND=${COMMAND:?'variable is required'}
 
-if [[ -z "${AWS_ACCOUNT_IDS+x}" ]]; then
+if [[ -n "${AWS_OU_ID+x}" ]]; then
+  # If AWS_OU_ID is set, discover all accounts under that OU
+  echo "OU-based deployment detected. Discovering accounts under OU: ${AWS_OU_ID}"
+  OU_NAME=$(aws_ou_name)
+  echo "OU Name: ${OU_NAME}"
+  
+  # Get all accounts under the OU (including nested OUs)
+  AWS_ACCOUNT_IDS=$(aws_ou_account_ids)
+  
+  if [[ -z "${AWS_ACCOUNT_IDS}" ]]; then
+    echo "No active accounts found under OU ${AWS_OU_ID} (${OU_NAME})" >&2
+    exit 1
+  fi
+  
+  echo "Found accounts under OU ${AWS_OU_ID} (${OU_NAME}): ${AWS_ACCOUNT_IDS}"
+  
+  # Apply exclusions if AWS_EXCLUDE_ACCOUNT_IDS is set
+  if [[ -n "${AWS_EXCLUDE_ACCOUNT_IDS+x}" ]] && [[ "${AWS_EXCLUDE_ACCOUNT_IDS}" != "" ]]; then
+    echo "Applying account exclusions: ${AWS_EXCLUDE_ACCOUNT_IDS}"
+    local excluded_accounts="${AWS_EXCLUDE_ACCOUNT_IDS}"
+    local filtered_accounts=""
+    
+    for account_id in ${AWS_ACCOUNT_IDS}; do
+      local exclude_account=false
+      for excluded_id in ${excluded_accounts}; do
+        if [[ "${account_id}" == "${excluded_id}" ]]; then
+          exclude_account=true
+          break
+        fi
+      done
+      
+      if [[ "${exclude_account}" == "false" ]]; then
+        if [[ -n "${filtered_accounts}" ]]; then
+          filtered_accounts="${filtered_accounts} ${account_id}"
+        else
+          filtered_accounts="${account_id}"
+        fi
+      fi
+    done
+    
+    AWS_ACCOUNT_IDS="${filtered_accounts}"
+    echo "Accounts after exclusions: ${AWS_ACCOUNT_IDS}"
+  fi
+  
+elif [[ -z "${AWS_ACCOUNT_IDS+x}" ]]; then
   # If AWS_ACCOUNT_IDS is not set, set it to the current account ID
   aws_account_id
   AWS_ACCOUNT_IDS="${AWS_ACCOUNT_ID}"
@@ -85,6 +143,9 @@ for AWS_ACCOUNT_ID in $AWS_ACCOUNT_IDS; do
     aws_pop_authentication_history
     terraform_cleanup
   fi
+
+  # Restore original credentials if management role was assumed for OU operations
+  aws_restore_original_credentials
 
   # Assume the role into the next account if needed
   if_aws_assume_role
