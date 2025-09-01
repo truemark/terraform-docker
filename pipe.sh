@@ -88,6 +88,13 @@ if [[ -n "${AWS_OU_ID+x}" ]]; then
   
   # Apply exclusions if AWS_EXCLUDE_ACCOUNT_IDS is set
   if [[ -n "${AWS_EXCLUDE_ACCOUNT_IDS+x}" ]] && [[ "${AWS_EXCLUDE_ACCOUNT_IDS}" != "" ]]; then
+    echo "=== ACCOUNT EXCLUSION DEBUG - 2025-01-09 PIPE.SH CHANGES ==="
+    echo "About to apply account exclusions - checking if updated code is in Docker image"
+    echo "AWS_EXCLUDE_ACCOUNT_IDS: ${AWS_EXCLUDE_ACCOUNT_IDS}"
+    echo "AWS_ACCOUNT_IDS before exclusion: ${AWS_ACCOUNT_IDS}"
+    echo "If you see this message, the updated pipe.sh code IS in the Docker image"
+    echo "=== END ACCOUNT EXCLUSION DEBUG ==="
+    
     echo "Applying account exclusions: ${AWS_EXCLUDE_ACCOUNT_IDS}"
     excluded_accounts="${AWS_EXCLUDE_ACCOUNT_IDS}"
     filtered_accounts=""
