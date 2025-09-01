@@ -165,6 +165,80 @@ function if_tf_aws_bootstrap() {
   fi
 }
 
+# Assumes management account role for OU operations
+function aws_assume_management_role() {
+  debug "Executing aws_assume_management_role()"
+  : "${AWS_MANAGEMENT_ACCOUNT_ID:?'is a required variable'}"
+  : "${AWS_MANAGEMENT_ROLE_NAME:?'is a required variable'}"
+  
+  local management_role_arn="arn:aws:iam::${AWS_MANAGEMENT_ACCOUNT_ID}:role/${AWS_MANAGEMENT_ROLE_NAME}"
+  local session_name="${AWS_ROLE_SESSION_NAME:-terraform-ou-session}"
+  
+  debug "Assuming management account role: ${management_role_arn}"
+  
+  # Store current credentials for later restoration
+  export AWS_ORIGINAL_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID:-}"
+  export AWS_ORIGINAL_SECRET_ACCESS_KEY="${AWS_SECRET_ACCESS_KEY:-}"
+  export AWS_ORIGINAL_SESSION_TOKEN="${AWS_SESSION_TOKEN:-}"
+  export AWS_ORIGINAL_WEB_IDENTITY_TOKEN="${AWS_WEB_IDENTITY_TOKEN:-}"
+  export AWS_ORIGINAL_WEB_IDENTITY_TOKEN_FILE="${AWS_WEB_IDENTITY_TOKEN_FILE:-}"
+  export AWS_ORIGINAL_ROLE_ARN="${AWS_ROLE_ARN:-}"
+  
+  # Assume the management role
+  local assume_role_output
+  assume_role_output=$(aws sts assume-role \
+    --role-arn "${management_role_arn}" \
+    --role-session-name "${session_name}" \
+    --output json)
+  
+  if [[ $? -ne 0 ]]; then
+    echo "Failed to assume management account role: ${management_role_arn}" >&2
+    exit 1
+  fi
+  
+  # Extract credentials from the response
+  export AWS_ACCESS_KEY_ID=$(echo "${assume_role_output}" | jq -r '.Credentials.AccessKeyId')
+  export AWS_SECRET_ACCESS_KEY=$(echo "${assume_role_output}" | jq -r '.Credentials.SecretAccessKey')
+  export AWS_SESSION_TOKEN=$(echo "${assume_role_output}" | jq -r '.Credentials.SessionToken')
+  
+  # Clear OIDC variables to prevent conflicts
+  unset AWS_WEB_IDENTITY_TOKEN
+  unset AWS_WEB_IDENTITY_TOKEN_FILE
+  unset AWS_ROLE_ARN
+  
+  debug "Successfully assumed management account role"
+  export AWS_MANAGEMENT_ROLE_ASSUMED="true"
+}
+
+# Restores original credentials after OU operations
+function aws_restore_original_credentials() {
+  debug "Executing aws_restore_original_credentials()"
+  
+  if [[ "${AWS_MANAGEMENT_ROLE_ASSUMED:-false}" == "true" ]]; then
+    debug "Restoring original AWS credentials"
+    
+    export AWS_ACCESS_KEY_ID="${AWS_ORIGINAL_ACCESS_KEY_ID:-}"
+    export AWS_SECRET_ACCESS_KEY="${AWS_ORIGINAL_SECRET_ACCESS_KEY:-}"
+    export AWS_SESSION_TOKEN="${AWS_ORIGINAL_SESSION_TOKEN:-}"
+    export AWS_WEB_IDENTITY_TOKEN="${AWS_ORIGINAL_WEB_IDENTITY_TOKEN:-}"
+    export AWS_WEB_IDENTITY_TOKEN_FILE="${AWS_ORIGINAL_WEB_IDENTITY_TOKEN_FILE:-}"
+    export AWS_ROLE_ARN="${AWS_ORIGINAL_ROLE_ARN:-}"
+    
+    # Clean up temporary variables
+    unset AWS_ORIGINAL_ACCESS_KEY_ID
+    unset AWS_ORIGINAL_SECRET_ACCESS_KEY
+    unset AWS_ORIGINAL_SESSION_TOKEN
+    unset AWS_ORIGINAL_WEB_IDENTITY_TOKEN
+    unset AWS_ORIGINAL_WEB_IDENTITY_TOKEN_FILE
+    unset AWS_ORIGINAL_ROLE_ARN
+    unset AWS_MANAGEMENT_ROLE_ASSUMED
+    
+    debug "Original credentials restored"
+  else
+    debug "No management role was assumed, skipping credential restoration"
+  fi
+}
+
 # Recursively gets all account IDs under a given OU ID (including nested OUs)
 function aws_ou_account_ids() {
   debug "Executing aws_ou_account_ids()"
@@ -172,8 +246,16 @@ function aws_ou_account_ids() {
   
   local ou_id="${AWS_OU_ID}"
   local all_accounts=""
+  local management_role_assumed_locally=false
   
   debug "Getting accounts for OU: ${ou_id}"
+  
+  # Check if we need to assume management role for OU operations
+  if [[ -n "${AWS_MANAGEMENT_ACCOUNT_ID+x}" ]] && [[ -n "${AWS_MANAGEMENT_ROLE_NAME+x}" ]] && [[ "${AWS_MANAGEMENT_ROLE_ASSUMED:-false}" != "true" ]]; then
+    debug "Assuming management account role for OU operations"
+    aws_assume_management_role
+    management_role_assumed_locally=true
+  fi
   
   # Get direct accounts under this OU
   local direct_accounts
@@ -193,7 +275,7 @@ function aws_ou_account_ids() {
     for child_ou in ${child_ous}; do
       debug "Recursively getting accounts for child OU: ${child_ou}"
       local child_accounts
-      child_accounts=$(AWS_OU_ID="${child_ou}" aws_ou_account_ids_recursive "${child_ou}")
+      child_accounts=$(aws_ou_account_ids_recursive "${child_ou}")
       if [[ -n "${child_accounts}" ]]; then
         if [[ -n "${all_accounts}" ]]; then
           all_accounts="${all_accounts} ${child_accounts}"
@@ -202,6 +284,12 @@ function aws_ou_account_ids() {
         fi
       fi
     done
+  fi
+  
+  # Restore original credentials if we assumed the management role locally
+  if [[ "${management_role_assumed_locally}" == "true" ]]; then
+    debug "Restoring original credentials after OU discovery"
+    aws_restore_original_credentials
   fi
   
   # Remove duplicates and export
@@ -255,8 +343,24 @@ function aws_ou_name() {
   : "${AWS_OU_ID:?'is a required variable'}"
   
   local ou_name
+  local management_role_assumed_locally=false
+  
+  # Check if we need to assume management role for OU operations
+  if [[ -n "${AWS_MANAGEMENT_ACCOUNT_ID+x}" ]] && [[ -n "${AWS_MANAGEMENT_ROLE_NAME+x}" ]] && [[ "${AWS_MANAGEMENT_ROLE_ASSUMED:-false}" != "true" ]]; then
+    debug "Assuming management account role for OU name lookup"
+    aws_assume_management_role
+    management_role_assumed_locally=true
+  fi
+  
   ou_name=$(aws organizations describe-organizational-unit --organizational-unit-id "${AWS_OU_ID}" --query 'OrganizationalUnit.Name' --output text 2>/dev/null || echo "Unknown")
   debug "OU Name for ${AWS_OU_ID}: ${ou_name}"
+  
+  # Restore original credentials if we assumed the management role locally
+  if [[ "${management_role_assumed_locally}" == "true" ]]; then
+    debug "Restoring original credentials after OU name lookup"
+    aws_restore_original_credentials
+  fi
+  
   echo "${ou_name}"
 }
 

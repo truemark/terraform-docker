@@ -36,6 +36,20 @@ aws_pager_off
 # Handle AWS authentication
 aws_authentication
 
+# Set default management account configuration for OU operations
+if [[ -n "${AWS_OU_ID+x}" ]]; then
+  # Set default management role name if not provided
+  export AWS_MANAGEMENT_ROLE_NAME="${AWS_MANAGEMENT_ROLE_NAME:-github-security-provisioner}"
+  
+  echo "OU-based deployment detected with management account configuration:"
+  if [[ -n "${AWS_MANAGEMENT_ACCOUNT_ID+x}" ]]; then
+    echo "  Management Account ID: ${AWS_MANAGEMENT_ACCOUNT_ID}"
+  else
+    echo "  Management Account ID: Not configured (will use current credentials for OU operations)"
+  fi
+  echo "  Management Role Name: ${AWS_MANAGEMENT_ROLE_NAME}"
+fi
+
 # Unlock with git-crypt if needed
 if_git_crypt_unlock
 
@@ -129,6 +143,9 @@ for AWS_ACCOUNT_ID in $AWS_ACCOUNT_IDS; do
     aws_pop_authentication_history
     terraform_cleanup
   fi
+
+  # Restore original credentials if management role was assumed for OU operations
+  aws_restore_original_credentials
 
   # Assume the role into the next account if needed
   if_aws_assume_role
