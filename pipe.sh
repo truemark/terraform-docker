@@ -84,6 +84,8 @@ if [[ -n "${AWS_OU_ID+x}" ]]; then
     exit 1
   fi
   
+  # Clean up account IDs (remove any extra whitespace/tabs and ensure proper format)
+  AWS_ACCOUNT_IDS=$(echo "${AWS_ACCOUNT_IDS}" | tr '\t' ' ' | tr -s ' ' | xargs)
   echo "Found accounts under OU ${AWS_OU_ID} (${OU_NAME}): ${AWS_ACCOUNT_IDS}"
   
   # Apply exclusions if AWS_EXCLUDE_ACCOUNT_IDS is set
@@ -100,6 +102,12 @@ if [[ -n "${AWS_OU_ID+x}" ]]; then
     filtered_accounts=""
     
     for account_id in ${AWS_ACCOUNT_IDS}; do
+      # Skip if account_id contains non-numeric characters (corrupted data)
+      if [[ ! "${account_id}" =~ ^[0-9]+$ ]]; then
+        echo "WARNING: Skipping invalid account ID: ${account_id}"
+        continue
+      fi
+      
       exclude_account=false
       for excluded_id in ${excluded_accounts}; do
         if [[ "${account_id}" == "${excluded_id}" ]]; then
