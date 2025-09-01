@@ -252,23 +252,36 @@ function aws_ou_account_ids() {
   
   # Check if we need to assume management role for OU operations
   # Skip if we're in GitHub Actions or already authenticated with the management account
+  echo "=== OU FUNCTIONALITY DEBUG - 2025-01-09 CHANGES ==="
+  echo "AWS_SKIP_MANAGEMENT_ROLE_ASSUMPTION=${AWS_SKIP_MANAGEMENT_ROLE_ASSUMPTION:-false}"
+  echo "AWS_MANAGEMENT_ACCOUNT_ID=${AWS_MANAGEMENT_ACCOUNT_ID:-not_set}"
+  echo "AWS_MANAGEMENT_ROLE_NAME=${AWS_MANAGEMENT_ROLE_NAME:-not_set}"
+  echo "AWS_MANAGEMENT_ROLE_ASSUMED=${AWS_MANAGEMENT_ROLE_ASSUMED:-false}"
+  
   if [[ "${AWS_SKIP_MANAGEMENT_ROLE_ASSUMPTION:-false}" == "true" ]]; then
+    echo "*** SKIPPING MANAGEMENT ROLE ASSUMPTION - NEW LOGIC WORKING ***"
     debug "Skipping management role assumption (AWS_SKIP_MANAGEMENT_ROLE_ASSUMPTION=true)"
   elif [[ -n "${AWS_MANAGEMENT_ACCOUNT_ID+x}" ]] && [[ -n "${AWS_MANAGEMENT_ROLE_NAME+x}" ]] && [[ "${AWS_MANAGEMENT_ROLE_ASSUMED:-false}" != "true" ]]; then
     # Check current account ID to avoid circular role assumption
     local current_account_id
     current_account_id=$(aws sts get-caller-identity --query Account --output text 2>/dev/null || echo "")
+    echo "Current account ID: ${current_account_id}"
+    echo "Management account ID: ${AWS_MANAGEMENT_ACCOUNT_ID}"
     
     if [[ "${current_account_id}" != "${AWS_MANAGEMENT_ACCOUNT_ID}" ]]; then
+      echo "*** ATTEMPTING MANAGEMENT ROLE ASSUMPTION - OLD LOGIC PATH ***"
       debug "Assuming management account role for OU operations"
       aws_assume_management_role
       management_role_assumed_locally=true
     else
+      echo "*** ALREADY AUTHENTICATED WITH MANAGEMENT ACCOUNT - SKIPPING ASSUMPTION ***"
       debug "Already authenticated with management account (${AWS_MANAGEMENT_ACCOUNT_ID})"
     fi
   else
+    echo "*** MANAGEMENT ROLE NOT CONFIGURED OR ALREADY ASSUMED ***"
     debug "Management role not configured or already assumed"
   fi
+  echo "=== END OU FUNCTIONALITY DEBUG ==="
   
   # Get direct accounts under this OU
   local direct_accounts
