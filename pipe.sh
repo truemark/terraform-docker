@@ -48,6 +48,13 @@ if [[ -n "${AWS_OU_ID+x}" ]]; then
     echo "  Management Account ID: Not configured (will use current credentials for OU operations)"
   fi
   echo "  Management Role Name: ${AWS_MANAGEMENT_ROLE_NAME}"
+  
+  # If we're in GitHub Actions (detected by GITHUB_ACTIONS env var), 
+  # skip management role assumption since we're already authenticated
+  if [[ "${GITHUB_ACTIONS:-false}" == "true" ]]; then
+    echo "GitHub Actions detected - using existing management account credentials for OU operations"
+    export AWS_SKIP_MANAGEMENT_ROLE_ASSUMPTION="true"
+  fi
 fi
 
 # Unlock with git-crypt if needed

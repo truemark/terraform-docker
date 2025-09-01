@@ -251,16 +251,23 @@ function aws_ou_account_ids() {
   debug "Getting accounts for OU: ${ou_id}"
   
   # Check if we need to assume management role for OU operations
-  # Skip if we're already authenticated with the management account (e.g., via GitHub OIDC)
-  local current_account_id
-  current_account_id=$(aws sts get-caller-identity --query Account --output text 2>/dev/null || echo "")
-  
-  if [[ -n "${AWS_MANAGEMENT_ACCOUNT_ID+x}" ]] && [[ -n "${AWS_MANAGEMENT_ROLE_NAME+x}" ]] && [[ "${AWS_MANAGEMENT_ROLE_ASSUMED:-false}" != "true" ]] && [[ "${current_account_id}" != "${AWS_MANAGEMENT_ACCOUNT_ID}" ]]; then
-    debug "Assuming management account role for OU operations"
-    aws_assume_management_role
-    management_role_assumed_locally=true
+  # Skip if we're in GitHub Actions or already authenticated with the management account
+  if [[ "${AWS_SKIP_MANAGEMENT_ROLE_ASSUMPTION:-false}" == "true" ]]; then
+    debug "Skipping management role assumption (AWS_SKIP_MANAGEMENT_ROLE_ASSUMPTION=true)"
+  elif [[ -n "${AWS_MANAGEMENT_ACCOUNT_ID+x}" ]] && [[ -n "${AWS_MANAGEMENT_ROLE_NAME+x}" ]] && [[ "${AWS_MANAGEMENT_ROLE_ASSUMED:-false}" != "true" ]]; then
+    # Check current account ID to avoid circular role assumption
+    local current_account_id
+    current_account_id=$(aws sts get-caller-identity --query Account --output text 2>/dev/null || echo "")
+    
+    if [[ "${current_account_id}" != "${AWS_MANAGEMENT_ACCOUNT_ID}" ]]; then
+      debug "Assuming management account role for OU operations"
+      aws_assume_management_role
+      management_role_assumed_locally=true
+    else
+      debug "Already authenticated with management account (${AWS_MANAGEMENT_ACCOUNT_ID})"
+    fi
   else
-    debug "Already authenticated with management account or management role not configured"
+    debug "Management role not configured or already assumed"
   fi
   
   # Get direct accounts under this OU
@@ -352,16 +359,23 @@ function aws_ou_name() {
   local management_role_assumed_locally=false
   
   # Check if we need to assume management role for OU operations
-  # Skip if we're already authenticated with the management account (e.g., via GitHub OIDC)
-  local current_account_id
-  current_account_id=$(aws sts get-caller-identity --query Account --output text 2>/dev/null || echo "")
-  
-  if [[ -n "${AWS_MANAGEMENT_ACCOUNT_ID+x}" ]] && [[ -n "${AWS_MANAGEMENT_ROLE_NAME+x}" ]] && [[ "${AWS_MANAGEMENT_ROLE_ASSUMED:-false}" != "true" ]] && [[ "${current_account_id}" != "${AWS_MANAGEMENT_ACCOUNT_ID}" ]]; then
-    debug "Assuming management account role for OU name lookup"
-    aws_assume_management_role
-    management_role_assumed_locally=true
+  # Skip if we're in GitHub Actions or already authenticated with the management account
+  if [[ "${AWS_SKIP_MANAGEMENT_ROLE_ASSUMPTION:-false}" == "true" ]]; then
+    debug "Skipping management role assumption (AWS_SKIP_MANAGEMENT_ROLE_ASSUMPTION=true)"
+  elif [[ -n "${AWS_MANAGEMENT_ACCOUNT_ID+x}" ]] && [[ -n "${AWS_MANAGEMENT_ROLE_NAME+x}" ]] && [[ "${AWS_MANAGEMENT_ROLE_ASSUMED:-false}" != "true" ]]; then
+    # Check current account ID to avoid circular role assumption
+    local current_account_id
+    current_account_id=$(aws sts get-caller-identity --query Account --output text 2>/dev/null || echo "")
+    
+    if [[ "${current_account_id}" != "${AWS_MANAGEMENT_ACCOUNT_ID}" ]]; then
+      debug "Assuming management account role for OU name lookup"
+      aws_assume_management_role
+      management_role_assumed_locally=true
+    else
+      debug "Already authenticated with management account (${AWS_MANAGEMENT_ACCOUNT_ID})"
+    fi
   else
-    debug "Already authenticated with management account or management role not configured"
+    debug "Management role not configured or already assumed"
   fi
   
   ou_name=$(aws organizations describe-organizational-unit --organizational-unit-id "${AWS_OU_ID}" --query 'OrganizationalUnit.Name' --output text 2>/dev/null || echo "Unknown")
