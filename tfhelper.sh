@@ -116,8 +116,7 @@ function tf_aws_bootstrap() {
   debug "Backend config file expanded: ${TF_BACKEND_CONFIG_EXPANDED}"
   bucket="$(grep bucket "${config}" | sed -e 's/.*=//' | xargs)"
   echo "Using S3 bucket: ${bucket}"
-  table="$(grep table "${config}" | sed -e 's/.*=//' | xargs)"
-  echo "Using DynamoDB table: ${table}"
+  use_lockfile="$(grep -E '^use_lockfile\s*=\s*true' "${config}")"
   if ! aws s3api head-bucket --bucket "${bucket}" 2>/dev/null 1>&2; then
     echo "Bootstrapping S3 bucket: ${bucket}"
     # Create bucket
@@ -142,17 +141,23 @@ function tf_aws_bootstrap() {
   else
     debug "S3 bucket ${bucket} already exits"
   fi
-  if ! aws dynamodb describe-table --table-name "${table}" 2>/dev/null 1>&2; then
-    echo "Bootstrapping DynamoDB table [${table}]"
-    aws dynamodb create-table \
-      --region "${AWS_DEFAULT_REGION}" \
-      --table-name "${table}" \
-      --attribute-definitions AttributeName=LockID,AttributeType=S \
-      --key-schema AttributeName=LockID,KeyType=HASH \
-      --provisioned-throughput ReadCapacityUnits=1,WriteCapacityUnits=1
-    sleep 5
+  if [[ -z "${use_lockfile}" ]]; then
+    table="$(grep table "${config}" | sed -e 's/.*=//' | xargs)"
+    echo "Using DynamoDB table: ${table}"
+    if ! aws dynamodb describe-table --table-name "${table}" 2>/dev/null 1>&2; then
+      echo "Bootstrapping DynamoDB table [${table}]"
+      aws dynamodb create-table \
+        --region "${AWS_DEFAULT_REGION}" \
+        --table-name "${table}" \
+        --attribute-definitions AttributeName=LockID,AttributeType=S \
+        --key-schema AttributeName=LockID,KeyType=HASH \
+        --provisioned-throughput ReadCapacityUnits=1,WriteCapacityUnits=1
+      sleep 5
+    else
+      debug "DynamoDB table ${table} already exists"
+    fi
   else
-    debug "DynamoDB table ${table} already exists"
+    debug "use_lockfile = true found, skipping DynamoDB bootstrap commands"
   fi
 }
 
