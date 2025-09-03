@@ -73,7 +73,7 @@ docker run --rm \
   -e COMMAND="terraform plan" \
   -v $(pwd):/workspace \
   -w /workspace \
-  truemark/terraform-aws-pipe:1.5-5
+  truemark/terraform-aws-pipe:latest
 ```
 
 #### OU Deployment with Management Account Role
@@ -88,7 +88,7 @@ docker run --rm \
   -e COMMAND="terraform plan" \
   -v $(pwd):/workspace \
   -w /workspace \
-  truemark/terraform-aws-pipe:1.5-5
+  truemark/terraform-aws-pipe:latest
 ```
 
 ### How It Works
