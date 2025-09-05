@@ -172,14 +172,11 @@ function if_tf_aws_bootstrap() {
 
 # Assumes management account role for OU operations
 function aws_assume_management_role() {
-  debug "Executing aws_assume_management_role()"
   : "${AWS_MANAGEMENT_ACCOUNT_ID:?'is a required variable'}"
   : "${AWS_MANAGEMENT_ROLE_NAME:?'is a required variable'}"
   
   local management_role_arn="arn:aws:iam::${AWS_MANAGEMENT_ACCOUNT_ID}:role/${AWS_MANAGEMENT_ROLE_NAME}"
   local session_name="${AWS_ROLE_SESSION_NAME:-terraform-ou-session}"
-  
-  debug "Assuming management account role: ${management_role_arn}"
   
   # Store current credentials for later restoration
   export AWS_ORIGINAL_ACCESS_KEY_ID="${AWS_ACCESS_KEY_ID:-}"
@@ -211,17 +208,12 @@ function aws_assume_management_role() {
   unset AWS_WEB_IDENTITY_TOKEN_FILE
   unset AWS_ROLE_ARN
   
-  debug "Successfully assumed management account role"
   export AWS_MANAGEMENT_ROLE_ASSUMED="true"
 }
 
 # Restores original credentials after OU operations
 function aws_restore_original_credentials() {
-  debug "Executing aws_restore_original_credentials()"
-  
   if [[ "${AWS_MANAGEMENT_ROLE_ASSUMED:-false}" == "true" ]]; then
-    debug "Restoring original AWS credentials"
-    
     export AWS_ACCESS_KEY_ID="${AWS_ORIGINAL_ACCESS_KEY_ID:-}"
     export AWS_SECRET_ACCESS_KEY="${AWS_ORIGINAL_SECRET_ACCESS_KEY:-}"
     export AWS_SESSION_TOKEN="${AWS_ORIGINAL_SESSION_TOKEN:-}"
@@ -237,42 +229,30 @@ function aws_restore_original_credentials() {
     unset AWS_ORIGINAL_WEB_IDENTITY_TOKEN_FILE
     unset AWS_ORIGINAL_ROLE_ARN
     unset AWS_MANAGEMENT_ROLE_ASSUMED
-    
-    debug "Original credentials restored"
-  else
-    debug "No management role was assumed, skipping credential restoration"
   fi
 }
 
 # Recursively gets all account IDs under a given OU ID (including nested OUs)
 function aws_ou_account_ids() {
-  debug "Executing aws_ou_account_ids()"
   : "${AWS_OU_ID:?'is a required variable'}"
   
   local ou_id="${AWS_OU_ID}"
   local all_accounts=""
   local management_role_assumed_locally=false
   
-  debug "Getting accounts for OU: ${ou_id}"
-  
   # Check if we need to assume management role for OU operations
   # Skip if we're in GitHub Actions or already authenticated with the management account
   if [[ "${AWS_SKIP_MANAGEMENT_ROLE_ASSUMPTION:-false}" == "true" ]]; then
-    debug "Skipping management role assumption (AWS_SKIP_MANAGEMENT_ROLE_ASSUMPTION=true)"
+    : # Skip management role assumption
   elif [[ -n "${AWS_MANAGEMENT_ACCOUNT_ID+x}" ]] && [[ -n "${AWS_MANAGEMENT_ROLE_NAME+x}" ]] && [[ "${AWS_MANAGEMENT_ROLE_ASSUMED:-false}" != "true" ]]; then
     # Check current account ID to avoid circular role assumption
     local current_account_id
     current_account_id=$(aws sts get-caller-identity --query Account --output text 2>/dev/null || echo "")
     
     if [[ "${current_account_id}" != "${AWS_MANAGEMENT_ACCOUNT_ID}" ]]; then
-      debug "Assuming management account role for OU operations"
       aws_assume_management_role
       management_role_assumed_locally=true
-    else
-      debug "Already authenticated with management account (${AWS_MANAGEMENT_ACCOUNT_ID})"
     fi
-  else
-    debug "Management role not configured or already assumed"
   fi
   
   # Get direct accounts under this OU
@@ -280,7 +260,6 @@ function aws_ou_account_ids() {
   direct_accounts=$(aws organizations list-accounts-for-parent --parent-id "${ou_id}" --query 'Accounts[?Status==`ACTIVE`].Id' --output text 2>/dev/null || echo "")
   
   if [[ -n "${direct_accounts}" ]]; then
-    debug "Found direct accounts: ${direct_accounts}"
     all_accounts="${direct_accounts}"
   fi
   
@@ -289,9 +268,7 @@ function aws_ou_account_ids() {
   child_ous=$(aws organizations list-organizational-units-for-parent --parent-id "${ou_id}" --query 'OrganizationalUnits[].Id' --output text 2>/dev/null || echo "")
   
   if [[ -n "${child_ous}" ]]; then
-    debug "Found child OUs: ${child_ous}"
     for child_ou in ${child_ous}; do
-      debug "Recursively getting accounts for child OU: ${child_ou}"
       local child_accounts
       child_accounts=$(aws_ou_account_ids_recursive "${child_ou}")
       if [[ -n "${child_accounts}" ]]; then
@@ -306,17 +283,14 @@ function aws_ou_account_ids() {
   
   # Restore original credentials if we assumed the management role locally
   if [[ "${management_role_assumed_locally}" == "true" ]]; then
-    debug "Restoring original credentials after OU discovery"
     aws_restore_original_credentials
   fi
   
   # Remove duplicates and export
   if [[ -n "${all_accounts}" ]]; then
     all_accounts=$(echo "${all_accounts}" | tr ' ' '\n' | sort -u | tr '\n' ' ' | sed 's/[[:space:]]*$//')
-    debug "All accounts under OU ${ou_id}: ${all_accounts}"
     echo "${all_accounts}"
   else
-    debug "No accounts found under OU ${ou_id}"
     echo ""
   fi
 }
@@ -357,7 +331,6 @@ function aws_ou_account_ids_recursive() {
 
 # Gets OU name for logging purposes
 function aws_ou_name() {
-  debug "Executing aws_ou_name()"
   : "${AWS_OU_ID:?'is a required variable'}"
   
   local ou_name
@@ -366,29 +339,22 @@ function aws_ou_name() {
   # Check if we need to assume management role for OU operations
   # Skip if we're in GitHub Actions or already authenticated with the management account
   if [[ "${AWS_SKIP_MANAGEMENT_ROLE_ASSUMPTION:-false}" == "true" ]]; then
-    debug "Skipping management role assumption (AWS_SKIP_MANAGEMENT_ROLE_ASSUMPTION=true)"
+    : # Skip management role assumption
   elif [[ -n "${AWS_MANAGEMENT_ACCOUNT_ID+x}" ]] && [[ -n "${AWS_MANAGEMENT_ROLE_NAME+x}" ]] && [[ "${AWS_MANAGEMENT_ROLE_ASSUMED:-false}" != "true" ]]; then
     # Check current account ID to avoid circular role assumption
     local current_account_id
     current_account_id=$(aws sts get-caller-identity --query Account --output text 2>/dev/null || echo "")
     
     if [[ "${current_account_id}" != "${AWS_MANAGEMENT_ACCOUNT_ID}" ]]; then
-      debug "Assuming management account role for OU name lookup"
       aws_assume_management_role
       management_role_assumed_locally=true
-    else
-      debug "Already authenticated with management account (${AWS_MANAGEMENT_ACCOUNT_ID})"
     fi
-  else
-    debug "Management role not configured or already assumed"
   fi
   
   ou_name=$(aws organizations describe-organizational-unit --organizational-unit-id "${AWS_OU_ID}" --query 'OrganizationalUnit.Name' --output text 2>/dev/null || echo "Unknown")
-  debug "OU Name for ${AWS_OU_ID}: ${ou_name}"
   
   # Restore original credentials if we assumed the management role locally
   if [[ "${management_role_assumed_locally}" == "true" ]]; then
-    debug "Restoring original credentials after OU name lookup"
     aws_restore_original_credentials
   fi
   
