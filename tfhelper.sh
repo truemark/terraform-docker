@@ -116,7 +116,7 @@ function tf_aws_bootstrap() {
   debug "Backend config file expanded: ${TF_BACKEND_CONFIG_EXPANDED}"
   bucket="$(grep bucket "${config}" | sed -e 's/.*=//' | xargs)"
   echo "Using S3 bucket: ${bucket}"
-  use_lockfile="$(grep -E '^use_lockfile\s*=\s*true' "${config}")"
+  use_lockfile="$(grep -E '^use_lockfile\s*=\s*true' "${config}" || true)"
   if ! aws s3api head-bucket --bucket "${bucket}" 2>/dev/null 1>&2; then
     echo "Bootstrapping S3 bucket: ${bucket}"
     # Create bucket
